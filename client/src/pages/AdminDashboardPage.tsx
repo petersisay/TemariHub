@@ -34,18 +34,43 @@ export const AdminDashboardPage: React.FC = () => {
 
   const loadData = async () => {
     setIsLoading(true);
-    const [statData, queueData, repData, logData] = await Promise.all([
-      adminService.getAdminStats(),
-      adminService.getModerationQueue(),
-      adminService.getReports(),
-      adminService.getAuditLogs(),
-    ]);
+    try {
+      const [statData, queueData, repData, logData] = await Promise.all([
+        adminService.getAdminStats(),
+        adminService.getModerationQueue(),
+        adminService.getReports(),
+        adminService.getAuditLogs(),
+      ]);
 
-    setStats(statData);
-    setPendingQueue(queueData);
-    setReports(repData);
-    setAuditLogs(logData);
-    setIsLoading(false);
+      const pendingReviews =
+        statData?.pendingReviews ??
+        statData?.pendingModeration ??
+        (Array.isArray(queueData) ? queueData.length : 0);
+      const activePublished =
+        statData?.activePublished ?? statData?.publishedOpportunities ?? 0;
+      const openReports =
+        statData?.openReports ??
+        statData?.pendingReports ??
+        (Array.isArray(repData) ? repData.length : 0);
+      const totalAudits =
+        statData?.totalAudits ??
+        statData?.totalTracked ??
+        (Array.isArray(logData) ? logData.length : 0);
+
+      setStats({
+        pendingReviews,
+        activePublished,
+        openReports,
+        totalAudits,
+      });
+      setPendingQueue(Array.isArray(queueData) ? queueData : []);
+      setReports(Array.isArray(repData) ? repData : []);
+      setAuditLogs(Array.isArray(logData) ? logData : []);
+    } catch (err) {
+      console.warn('Error loading admin telemetry, using safe defaults:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -90,7 +115,7 @@ export const AdminDashboardPage: React.FC = () => {
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
           <span className="text-2xl font-black text-slate-900 mt-1 block">
-            {stats.pendingReviews}
+            {stats?.pendingReviews ?? 0}
           </span>
         </Card>
 
@@ -102,7 +127,7 @@ export const AdminDashboardPage: React.FC = () => {
             <CheckCircle2 className="w-4 h-4 text-teal-600" />
           </div>
           <span className="text-2xl font-black text-slate-900 mt-1 block">
-            {stats.activePublished}
+            {stats?.activePublished ?? 0}
           </span>
         </Card>
 
@@ -114,7 +139,7 @@ export const AdminDashboardPage: React.FC = () => {
             <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
           <span className="text-2xl font-black text-slate-900 mt-1 block">
-            {stats.openReports}
+            {stats?.openReports ?? 0}
           </span>
         </Card>
 
@@ -126,7 +151,7 @@ export const AdminDashboardPage: React.FC = () => {
             <History className="w-4 h-4 text-brand-600" />
           </div>
           <span className="text-2xl font-black text-slate-900 mt-1 block">
-            {stats.totalAudits}
+            {stats?.totalAudits ?? 0}
           </span>
         </Card>
       </div>
