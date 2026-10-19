@@ -73,7 +73,7 @@ export class AuthController {
           path: '/',
           httpOnly: true,
           secure: env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          sameSite: env.SESSION_COOKIE_SAME_SITE || (env.NODE_ENV === 'production' ? 'none' : 'lax'),
         });
 
         res.status(200).json({
