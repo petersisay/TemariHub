@@ -1,9 +1,37 @@
 # TemariHub (ተማሪሀብ)
 
-> **Discover opportunities. Build your future.**  
-> *ዕድሎችን ያግኙ። የወደፊትዎን ይገንቡ።*
+<div align="center">
+  <img src="client/public/temarihub-logo-badge.png" alt="TemariHub Brand Logo" width="120" height="120" />
+  <h3>Discover opportunities. Build your future.</h3>
+  <p><em>ዕድሎችን ያግኙ። የወደፊትዎን ይገንቡ።</em></p>
 
-TemariHub is a full-stack opportunity discovery and application tracking platform designed specifically for Ethiopian university students in STEM and technology disciplines. It bridges the gap between fragmented information sources and students seeking verified internships, entry-level roles, hackathons, fellowships, and scholarships.
+  [![CI Tests](https://img.shields.io/badge/tests-86%20passed-brightgreen.svg)](#-full-stack-mvp-implementation-status)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.x%20Strict-blue.svg)](https://www.typescriptlang.org/)
+  [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
+  [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
+  [![Express](https://img.shields.io/badge/Express-4.x-black.svg)](https://expressjs.com/)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose%208-47A248.svg)](https://mongoosejs.com/)
+  [![License](https://img.shields.io/badge/license-MIT-purple.svg)](./LICENSE)
+</div>
+
+---
+
+TemariHub is a full-stack opportunity discovery and application tracking platform crafted specifically for Ethiopian university students in STEM and technology disciplines. It bridges the gap between fragmented information sources and ambitious students seeking verified internships, entry-level engineering roles, hackathons, fellowships, and scholarships across Ethiopia and global remote programs.
+
+---
+
+## 🎨 Brand Identity & Motion Design
+
+TemariHub features a modernized, production-grade visual identity and motion experience tailored for Ethiopian students and tech innovators:
+
+- **Graduation-Cap "T" Emblem:** The official brand mark integrates the bold letter **T** with an academic graduation cap and tassel, symbolizing education, achievement, and career elevation. Used seamlessly across the transparent navbar, favicon suite (`.ico`, `.png`), and social cards.
+- **Deep Navy & Electric-Blue Cosmos:** The hero visual foundation pairs high-resolution education-tech imagery (digital globe, glowing constellation nodes, academic cap) with dark vignette gradients to ensure maximum contrast and WCAG AAA typography readability.
+- **Pure CSS Keyframe Animation System:**
+  - **Flowing Wave Harmonics:** Dual-speed horizontal wave layers (`heroWaveSlow` 22s and `heroWaveFast` 14s) producing a dynamic fluid effect.
+  - **Floating Luminous Constellations:** 9 staggered floating node particles with cyan pulses and warm amber highlights drifting smoothly across the viewport.
+  - **Ambient Core Glow & Cap Float:** Subtle 5-second rhythmic glow breathing around the digital globe and graduation cap.
+  - **Glassmorphic Search Bar:** Translucent frosted container with high-contrast text inputs, quick-filter badges, and glowing focus rings.
+  - **Accessibility-First Motion:** All animations respect `prefers-reduced-motion: reduce`, ensuring an immediate graceful fallback for users with motion sensitivity.
 
 ---
 
@@ -212,6 +240,33 @@ From the repository root:
 
 ---
 
+## 🖥️ Running and Reviewing Locally
+
+To inspect the live running frontend and backend in your browser:
+
+1. **Start MongoDB:**
+   ```bash
+   mongod --dbpath <path-to-db> --port 27017
+   ```
+2. **Start Backend Server (Port 5000):**
+   ```bash
+   npm run dev:server
+   ```
+3. **Start Frontend Dev Server (Port 5173):**
+   ```bash
+   npm run dev:client
+   ```
+4. **Open Browser:**
+   - Platform UI: [`http://localhost:5173`](http://localhost:5173)
+   - API Health: [`http://localhost:5000/api/v1/health`](http://localhost:5000/api/v1/health)
+
+Demo Accounts for instant verification:
+- **Student User:** `nahom.tadesse@aau.edu.et` / `StudentPassword123!`
+- **Administrator:** `admin@temarihub.et` / `AdminPass123!`
+
+---
+
 ## 📜 License
 
 MIT License. Designed and built for Ethiopian STEM students.
+
