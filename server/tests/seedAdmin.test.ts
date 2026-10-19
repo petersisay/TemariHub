@@ -52,15 +52,21 @@ describe('Administrator Provisioning (seedAdmin) Tests', () => {
     });
 
     it('uses default admin name if name is not explicitly specified', async () => {
-      const result = await provisionAdmin({
-        email: 'defaultname@temarihub.et',
-        password: 'ValidPassword123!',
-        disconnectOnFinish: false,
-      });
+      const origEnvName = process.env.INITIAL_ADMIN_NAME;
+      delete process.env.INITIAL_ADMIN_NAME;
+      try {
+        const result = await provisionAdmin({
+          email: 'defaultname@temarihub.et',
+          password: 'ValidPassword123!',
+          disconnectOnFinish: false,
+        });
 
-      expect(result.status).toBe('created');
-      const user = await User.findOne({ email: 'defaultname@temarihub.et' });
-      expect(user?.name).toBe('TemariHub Administrator');
+        expect(result.status).toBe('created');
+        const user = await User.findOne({ email: 'defaultname@temarihub.et' });
+        expect(user?.name).toBe('TemariHub Administrator');
+      } finally {
+        if (origEnvName) process.env.INITIAL_ADMIN_NAME = origEnvName;
+      }
     });
   });
 
