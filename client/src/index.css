@@ -38,3 +38,121 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ==========================================================================
+   TemariHub Hero Ambient Motion & Light Waves Animation System
+   ========================================================================== */
+
+@keyframes heroWaveSlow {
+  0% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-15%) translateZ(0) scaleY(1.06);
+  }
+  100% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+}
+
+@keyframes heroWaveFast {
+  0% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(18%) translateZ(0) scaleY(0.94);
+  }
+  100% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+}
+
+@keyframes heroParticleFloat {
+  0% {
+    transform: translateY(0px) translateX(0px) scale(0.8);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translateY(-28px) translateX(14px) scale(1.2);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-56px) translateX(-10px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes heroAmbientGlow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes heroCapFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.2deg);
+  }
+}
+
+@keyframes heroPulseBeam {
+  0%, 100% {
+    opacity: 0.35;
+    filter: drop-shadow(0 0 15px rgba(0, 240, 255, 0.4));
+  }
+  50% {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 35px rgba(37, 99, 235, 0.85));
+  }
+}
+
+.animate-hero-wave-slow {
+  animation: heroWaveSlow 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-hero-wave-fast {
+  animation: heroWaveFast 13s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-hero-glow {
+  animation: heroAmbientGlow 7s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.animate-hero-cap {
+  animation: heroCapFloat 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-hero-beam {
+  animation: heroPulseBeam 4.5s ease-in-out infinite;
+  will-change: opacity, filter;
+}
+
+.hero-particle {
+  animation: heroParticleFloat linear infinite;
+  will-change: transform, opacity;
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-wave-slow,
+  .animate-hero-wave-fast,
+  .animate-hero-glow,
+  .animate-hero-cap,
+  .animate-hero-beam,
+  .hero-particle {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
