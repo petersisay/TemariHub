@@ -55,30 +55,116 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="space-y-16 pb-16">
-      {/* Hero Section with Deep Navy Visual Depth */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-navy-950 via-navy-900 to-slate-900 text-white pt-14 pb-20 px-4 sm:px-6 lg:px-8 border-b border-navy-800">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(37,99,235,0.25),rgba(255,255,255,0))] pointer-events-none" />
+      {/* Hero Section with Supplied Education-Tech Background & Real Motion Animations */}
+      <section className="relative overflow-hidden bg-navy-950 text-white pt-14 pb-24 px-4 sm:px-6 lg:px-8 border-b border-navy-800/80">
+        {/* Layer 1: Supplied Education-Tech Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-no-repeat bg-[center_right] lg:bg-center pointer-events-none opacity-85 transition-opacity duration-700"
+          style={{ backgroundImage: "url('/hero-bg.png')" }}
+        />
 
+        {/* Layer 2: Vignette & Contrast Gradients for Text Legibility */}
+        <div className="absolute inset-0 bg-gradient-to-r from-navy-950 via-navy-950/85 to-navy-950/40 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-950/60 via-transparent to-navy-950 pointer-events-none" />
+
+        {/* Layer 3: Ambient Light Glows over Globe & Cap */}
+        <div className="absolute right-[5%] top-[15%] w-96 h-96 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(0,240,255,0.22),transparent_70%)] pointer-events-none animate-hero-glow" />
+        <div className="absolute right-[12%] top-[25%] w-72 h-72 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.28),transparent_70%)] pointer-events-none animate-hero-beam" />
+        <div className="absolute left-[10%] top-[30%] w-80 h-80 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.12),transparent_70%)] pointer-events-none" />
+
+        {/* Layer 4: Animated Flowing Light Waves (Horizontal / Diagonal Motion) */}
+        <div className="absolute inset-x-0 bottom-0 pointer-events-none overflow-hidden h-40">
+          {/* Slow Wave */}
+          <svg
+            className="absolute bottom-0 w-[200%] h-32 opacity-25 animate-hero-wave-slow text-cyan-400"
+            viewBox="0 0 1440 180"
+            fill="none"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,60 C240,120 480,20 720,80 C960,140 1200,40 1440,90 L1440,180 L0,180 Z"
+              fill="url(#cyanWaveGrad)"
+            />
+            <defs>
+              <linearGradient id="cyanWaveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.8" />
+                <stop offset="50%" stopColor="#2563eb" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#00f0ff" stopOpacity="0.8" />
+              </linearGradient>
+            </defs>
+          </svg>
+          {/* Fast Counter Wave */}
+          <svg
+            className="absolute -bottom-2 w-[180%] h-24 opacity-20 animate-hero-wave-fast text-brand-500"
+            viewBox="0 0 1440 150"
+            fill="none"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,40 C320,10 640,90 960,30 C1280,100 1400,20 1440,60 L1440,150 L0,150 Z"
+              fill="url(#blueWaveGrad)"
+            />
+            <defs>
+              <linearGradient id="blueWaveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.6" />
+                <stop offset="50%" stopColor="#1d4ed8" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.7" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        {/* Layer 5: Floating Luminous Particles (Tech Nodes) */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[
+            { top: '20%', left: '15%', delay: '0s', dur: '5.5s', size: '3px', color: '#00f0ff' },
+            { top: '45%', left: '22%', delay: '1.2s', dur: '6s', size: '4px', color: '#60a5fa' },
+            { top: '28%', left: '48%', delay: '2.5s', dur: '7s', size: '3px', color: '#38bdf8' },
+            { top: '65%', left: '35%', delay: '0.8s', dur: '5.8s', size: '4px', color: '#00f0ff' },
+            { top: '35%', left: '72%', delay: '3.1s', dur: '6.2s', size: '5px', color: '#00f0ff' },
+            { top: '55%', left: '80%', delay: '1.9s', dur: '6.8s', size: '3px', color: '#93c5fd' },
+            { top: '75%', left: '68%', delay: '0.4s', dur: '5.2s', size: '4px', color: '#00f0ff' },
+            { top: '15%', left: '85%', delay: '2.2s', dur: '6.5s', size: '3px', color: '#38bdf8' },
+            { top: '60%', left: '10%', delay: '3.8s', dur: '6s', size: '4px', color: '#f59e0b' },
+          ].map((pt, idx) => (
+            <span
+              key={idx}
+              className="absolute rounded-full hero-particle"
+              style={{
+                top: pt.top,
+                left: pt.left,
+                width: pt.size,
+                height: pt.size,
+                backgroundColor: pt.color,
+                boxShadow: `0 0 10px ${pt.color}, 0 0 20px ${pt.color}`,
+                animationDelay: pt.delay,
+                animationDuration: pt.dur,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Hero Content Container */}
         <div className="max-w-4xl mx-auto text-center relative z-10 space-y-6">
           {/* Target Audience Pill */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-navy-800/80 border border-navy-700/80 text-xs font-semibold text-amber-300 shadow-xs animate-in fade-in duration-500">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-900/80 backdrop-blur-md border border-cyan-500/30 text-xs font-semibold text-amber-300 shadow-lg shadow-cyan-950/40 animate-in fade-in duration-500">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>{t('hero.badge')}</span>
           </div>
 
-          {/* Hero Heading */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight sm:leading-none">
+          {/* Hero Heading with subtle drop shadow for crisp readability */}
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight sm:leading-none text-white drop-shadow-sm">
             {t('hero.title')}
           </h1>
 
-          <p className="text-slate-300 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          <p className="text-slate-200 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed drop-shadow-xs font-normal">
             {t('hero.subtitle')}
           </p>
 
           {/* Search Box */}
           <form
             onSubmit={handleSearchSubmit}
-            className="max-w-2xl mx-auto bg-white p-2 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center gap-2 border border-slate-200"
+            className="max-w-2xl mx-auto bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-2xl shadow-blue-950/60 flex flex-col sm:flex-row items-center gap-2 border border-slate-200 focus-within:ring-2 focus-within:ring-cyan-400 focus-within:border-transparent transition-all"
           >
             <div className="flex items-center gap-2.5 flex-1 px-3 w-full">
               <Search className="w-5 h-5 text-slate-400 shrink-0" />
@@ -87,27 +173,27 @@ export const LandingPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('hero.searchPlaceholder')}
-                className="w-full text-slate-800 text-sm py-2 placeholder-slate-400 focus:outline-none"
+                className="w-full text-slate-800 text-sm py-2 placeholder-slate-400 focus:outline-none bg-transparent"
               />
             </div>
             <Button
               type="submit"
               variant="primary"
               size="md"
-              className="w-full sm:w-auto px-6 font-semibold"
+              className="w-full sm:w-auto px-6 font-semibold shadow-md shadow-brand-600/30 hover:shadow-brand-600/50"
             >
               {t('hero.searchBtn')}
             </Button>
           </form>
 
           {/* Quick Tags */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-slate-400">
-            <span className="font-medium text-slate-300">{t('hero.popular')}</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs text-slate-300">
+            <span className="font-semibold text-slate-200">{t('hero.popular')}</span>
             {quickTags.map((tag) => (
               <button
                 key={tag.label}
                 onClick={() => navigate(`/opportunities?search=${encodeURIComponent(tag.q)}`)}
-                className="bg-navy-800/60 hover:bg-navy-700 text-slate-200 hover:text-white px-2.5 py-1 rounded-full border border-navy-700 transition-colors text-xs"
+                className="bg-navy-900/70 hover:bg-navy-800 text-slate-200 hover:text-cyan-300 px-3 py-1 rounded-full border border-navy-700/80 hover:border-cyan-400/50 backdrop-blur-xs transition-all text-xs shadow-xs"
               >
                 {tag.label}
               </button>
