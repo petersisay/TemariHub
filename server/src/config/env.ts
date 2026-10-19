@@ -49,6 +49,7 @@ export function createEnvSchema() {
       MONGODB_URI: z.string().default('mongodb://localhost:27017/temarihub'),
       SESSION_SECRET: z.string().optional(),
       SESSION_COOKIE_NAME: z.string().default('temarihub_sid'),
+      SESSION_COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).optional(),
       SESSION_MAX_AGE_MS: z.string().default('604800000').transform((val) => parseInt(val, 10)),
       RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform((val) => parseInt(val, 10)),
       RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform((val) => parseInt(val, 10)),
