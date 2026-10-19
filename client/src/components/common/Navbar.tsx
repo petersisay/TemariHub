@@ -93,9 +93,11 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-2.5 focus:outline-none group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-navy-950 via-brand-600 to-amber-500 flex items-center justify-center text-white font-extrabold text-lg shadow-sm group-hover:scale-105 transition-transform">
-              T
-            </div>
+            <img
+              src="/temarihub-logo.png"
+              alt="TemariHub Logo"
+              className="w-10 h-10 object-contain drop-shadow-xs group-hover:scale-105 transition-transform"
+            />
             <div>
               <span className="font-extrabold text-xl tracking-tight text-slate-900 flex items-center gap-1">
                 Temari<span className="text-brand-600">Hub</span>
