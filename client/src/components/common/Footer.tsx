@@ -13,9 +13,11 @@ export const Footer: React.FC = () => {
           {/* Brand & Purpose */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-amber-500 flex items-center justify-center text-white font-bold text-base">
-                T
-              </div>
+              <img
+                src="/temarihub-logo-badge.png"
+                alt="TemariHub Logo"
+                className="w-8 h-8 rounded-lg shadow-sm object-contain"
+              />
               <span className="font-bold text-lg text-white">TemariHub</span>
             </div>
             <p className="text-slate-400 text-xs sm:text-sm max-w-md leading-relaxed">
