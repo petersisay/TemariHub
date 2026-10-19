@@ -78,7 +78,7 @@ export function createApp(sessionStore?: session.Store): Express {
       cookie: {
         httpOnly: true,
         secure: env.NODE_ENV === 'production',
-        sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: env.SESSION_COOKIE_SAME_SITE || (env.NODE_ENV === 'production' ? 'none' : 'lax'),
         maxAge: env.SESSION_MAX_AGE_MS,
         path: '/',
       },
