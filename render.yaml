@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: temarihub-api
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build:server
+    startCommand: npm run start --workspace=server
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_PREFIX
+        value: /api/v1
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SESSION_COOKIE_NAME
+        value: temarihub_sid
+      - key: SESSION_COOKIE_SAME_SITE
+        value: none
