@@ -270,6 +270,8 @@ export async function seedOpportunitiesData(disconnectOnFinish = false) {
   }
 }
 
+export const seedOpportunities = seedOpportunitiesData;
+
 if (process.argv[1] && process.argv[1].includes('seedOpportunities')) {
   seedOpportunitiesData(true)
     .then(() => process.exit(0))
