@@ -3,7 +3,7 @@ services:
     name: temarihub-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build:server
+    buildCommand: npm install --include=dev && npm run build:server
     startCommand: npm run start --workspace=server
     healthCheckPath: /api/v1/health
     envVars:
