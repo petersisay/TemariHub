@@ -19,6 +19,8 @@
     "test": "npm run test:client && npm run test:server",
     "typecheck": "npm run typecheck:client && npm run typecheck:server",
     "build": "npm run build:client && npm run build:server",
+    "start": "npm run start --workspace=server",
+    "start:server": "npm run start --workspace=server",
     "seed:admin": "npm run seed:admin --workspace=server",
     "seed:opportunities": "npm run seed:opportunities --workspace=server"
   },
