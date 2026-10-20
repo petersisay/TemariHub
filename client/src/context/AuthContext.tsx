@@ -19,18 +19,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const DEMO_CREDENTIALS: Record<UserRole, { email: string; password: string; name: string }> = {
   student: {
     email: 'kidus@astu.edu.et',
-    password: 'Password123!',
+    password: 'StudentPass2026!',
     name: 'Kidus Hailu',
   },
   submitter: {
     email: 'careers@safaricom.et',
-    password: 'Password123!',
+    password: 'SubmitterPass2026!',
     name: 'Bethlehem Tadesse',
   },
   admin: {
     email: 'admin@temarihub.et',
-    password: 'Password123!',
-    name: 'Lead Admin',
+    password: 'AdminPass2026!',
+    name: 'TemariHub Lead Administrator',
   },
 };
 
