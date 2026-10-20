@@ -36,9 +36,9 @@ export const LoginPage: React.FC = () => {
   const handleDemoSignIn = async (demoRole: UserRole) => {
     setErrorMessage(null);
     const demoAccounts: Record<UserRole, { email: string; pass: string }> = {
-      student: { email: 'kidus@astu.edu.et', pass: 'Password123!' },
-      submitter: { email: 'careers@safaricom.et', pass: 'Password123!' },
-      admin: { email: 'admin@temarihub.et', pass: 'Password123!' },
+      student: { email: 'kidus@astu.edu.et', pass: 'StudentPass2026!' },
+      submitter: { email: 'careers@safaricom.et', pass: 'SubmitterPass2026!' },
+      admin: { email: 'admin@temarihub.et', pass: 'AdminPass2026!' },
     };
 
     const cred = demoAccounts[demoRole];
