@@ -67,11 +67,24 @@ This guide provides step-by-step instructions for deploying TemariHub using the 
    - **Name:** `temarihub-api`
    - **Region:** Frankfurt (EU Central) or Oregon (US West)
    - **Branch:** `main`
-   - **Root Directory:** *(Leave blank)*
    - **Runtime:** `Node`
-   - **Build Command:** `npm install --include=dev && npm run build:server`
-   - **Start Command:** `npm run start --workspace=server`
    - **Instance Type:** `Free`
+
+   > **Crucial: Match your Root Directory & Commands:**
+   >
+   > **If Root Directory is `server` (Your current Render configuration):**
+   > - **Root Directory:** `server`
+   > - **Build Command:** `npm install && npm run build`
+   > - **Start Command:** `npm start` *(or `node dist/server.js`)*
+   >
+   > *(Do NOT put `--workspace=server` in the start command when running inside the `server` directory, because workspaces only exist at the repository root).*
+   >
+   > ---
+   >
+   > **If Root Directory is left blank / `./` (Root configuration):**
+   > - **Root Directory:** *(Leave blank)*
+   > - **Build Command:** `npm install && npm run build:server`
+   > - **Start Command:** `npm run start --workspace=server`
 4. **Add Environment Variables:**
    Under **Environment Variables**, add the following key-value pairs:
 
