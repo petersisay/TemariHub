@@ -7,6 +7,35 @@ async function startServer(): Promise<void> {
     console.log(`[TemariHub Server] Starting in ${env.NODE_ENV} mode...`);
     await connectDatabase(env.MONGODB_URI);
 
+    // Automated initial admin bootstrap if configured
+    if (env.INITIAL_ADMIN_EMAIL && env.INITIAL_ADMIN_PASSWORD) {
+      try {
+        const { provisionAdmin } = await import('./scripts/seedAdmin.js');
+        const res = await provisionAdmin({
+          email: env.INITIAL_ADMIN_EMAIL,
+          password: env.INITIAL_ADMIN_PASSWORD,
+          name: env.INITIAL_ADMIN_NAME,
+          disconnectOnFinish: false,
+        });
+        console.log(`[TemariHub Server] Initial admin bootstrap status: ${res.status}`);
+      } catch (err: any) {
+        console.warn(`[TemariHub Server] Initial admin bootstrap warning: ${err.message}`);
+      }
+    }
+
+    // Auto-populate verified STEM opportunities if database is brand new
+    try {
+      const { Opportunity } = await import('./models/Opportunity.js');
+      const count = await Opportunity.countDocuments();
+      if (count === 0) {
+        console.log('[TemariHub Server] Database is empty. Auto-populating initial verified Ethiopian STEM opportunities...');
+        const { seedOpportunities } = await import('./scripts/seedOpportunities.js');
+        await seedOpportunities(false);
+      }
+    } catch (err: any) {
+      console.warn(`[TemariHub Server] Auto-seed opportunities warning: ${err.message}`);
+    }
+
     const server = app.listen(env.PORT, () => {
       console.log(`[TemariHub Server] Running on http://localhost:${env.PORT}${env.API_PREFIX}`);
       console.log(`[TemariHub Server] Health check available at http://localhost:${env.PORT}${env.API_PREFIX}/health`);
