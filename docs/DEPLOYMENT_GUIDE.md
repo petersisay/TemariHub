@@ -69,7 +69,7 @@ This guide provides step-by-step instructions for deploying TemariHub using the 
    - **Branch:** `main`
    - **Root Directory:** *(Leave blank)*
    - **Runtime:** `Node`
-   - **Build Command:** `npm install && npm run build:server`
+   - **Build Command:** `npm install --include=dev && npm run build:server`
    - **Start Command:** `npm run start --workspace=server`
    - **Instance Type:** `Free`
 4. **Add Environment Variables:**
