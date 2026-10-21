@@ -12,6 +12,7 @@ import {
 import { Opportunity } from '../../types';
 import { Badge } from '../common/Badge';
 import { useTranslation } from '../../context/I18nContext';
+import { useAuth } from '../../context/AuthContext';
 import { trackerService } from '../../services/trackerService';
 
 interface OpportunityCardProps {
@@ -26,6 +27,14 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   onSaveToggle,
 }) => {
   const { t } = useTranslation();
+  let user = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const auth = useAuth();
+    user = auth.user;
+  } catch {
+    user = null;
+  }
   const [isSaved, setIsSaved] = useState(initialSaved);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -96,19 +105,21 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
             ) : null}
           </div>
 
-          <button
-            onClick={handleSaveClick}
-            disabled={isSaving}
-            className={`p-1.5 rounded-lg border transition-all ${
-              isSaved
-                ? 'bg-amber-50 border-amber-300 text-amber-600'
-                : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-            }`}
-            title={isSaved ? t('opportunity.saved') : t('opportunity.save')}
-            aria-label={isSaved ? 'Unsave opportunity' : 'Save opportunity'}
-          >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-500' : ''}`} />
-          </button>
+          {(!user || user.role === 'student') && (
+            <button
+              onClick={handleSaveClick}
+              disabled={isSaving}
+              className={`p-1.5 rounded-lg border transition-all ${
+                isSaved
+                  ? 'bg-amber-50 border-amber-300 text-amber-600'
+                  : 'border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+              }`}
+              title={isSaved ? t('opportunity.saved') : t('opportunity.save')}
+              aria-label={isSaved ? 'Unsave opportunity' : 'Save opportunity'}
+            >
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-amber-500' : ''}`} />
+            </button>
+          )}
         </div>
 
         {/* Title & Organization */}
