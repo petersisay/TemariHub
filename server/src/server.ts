@@ -50,15 +50,10 @@ async function startServer(): Promise<void> {
 
     // Trusted sources registry initialization (official Ethiopian institutions)
 
-    // Auto-populate trusted sources registry if empty
+    // Auto-populate / synchronize trusted sources registry with all 12 verified Ethiopian institutions
     try {
-      const { TrustedSource } = await import('./models/TrustedSource.js');
-      const sourceCount = await TrustedSource.countDocuments();
-      if (sourceCount === 0) {
-        console.log('[TemariHub Server] Initializing verified Ethiopian trusted sources registry...');
-        const { seedTrustedSources } = await import('./scripts/seedTrustedSources.js');
-        await seedTrustedSources(false);
-      }
+      const { seedTrustedSources } = await import('./scripts/seedTrustedSources.js');
+      await seedTrustedSources(false);
     } catch (err: any) {
       console.warn(`[TemariHub Server] Auto-seed trusted sources warning: ${err.message}`);
     }
