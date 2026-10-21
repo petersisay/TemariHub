@@ -7,7 +7,7 @@ const router = Router();
 
 // Saved opportunities is a student feature
 router.use(requireAuth);
-router.use(requireRole(['student', 'admin']));
+router.use(requireRole('student'));
 
 router.get('/', SavedController.list);
 router.get('/:opportunityId/status', SavedController.checkIsSaved);
