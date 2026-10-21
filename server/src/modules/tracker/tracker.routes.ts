@@ -5,9 +5,9 @@ import { csrfProtection } from '../../middleware/csrf.middleware.js';
 
 const router = Router();
 
-// All tracker operations require student (or admin) authentication
+// All tracker operations require student authentication
 router.use(requireAuth);
-router.use(requireRole(['student', 'admin']));
+router.use(requireRole('student'));
 
 router.get('/', TrackerController.list);
 router.get('/stats', TrackerController.stats);
