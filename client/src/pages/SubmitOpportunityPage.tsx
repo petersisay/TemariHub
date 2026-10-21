@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { PlusCircle, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { PlusCircle, ShieldAlert, Edit } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { opportunityService } from '../services/opportunityService';
 import { OpportunityType, WorkArrangement, DegreeLevel } from '../types';
 import { STEM_FIELDS_OF_STUDY } from '../constants/academic';
 import { Button } from '../components/common/Button';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export const SubmitOpportunityPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
 
   const [title, setTitle] = useState('');
   const [orgName, setOrgName] = useState('');
@@ -22,12 +25,43 @@ export const SubmitOpportunityPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [selectedFields, setSelectedFields] = useState<string[]>(['Software Engineering', 'Computer Science']);
   const [selectedLevels, setSelectedLevels] = useState<DegreeLevel[]>(['undergraduate', 'recent_graduate']);
-  const [skillsInput, setSkillsInput] = useState('React, TypeScript, Python');
+  const [skillsInput, setSkillsInput] = useState('');
   const [originalSourceUrl, setOriginalSourceUrl] = useState('');
   const [applicationUrl, setApplicationUrl] = useState('');
   const [compType, setCompType] = useState<'paid' | 'unpaid' | 'stipend' | 'competitive'>('stipend');
-  const [compAmount, setCompAmount] = useState<string>('8000');
+  const [compAmount, setCompAmount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(false);
+
+  useEffect(() => {
+    if (!editId) return;
+    setIsLoadingExisting(true);
+    opportunityService.getOpportunityByIdOrSlug(editId).then((opp) => {
+      if (opp) {
+        setTitle(opp.title);
+        setOrgName(opp.organization.name);
+        setOrgWebsite(opp.organization.websiteUrl || '');
+        setOppType(opp.opportunityType);
+        setArrangement(opp.workArrangement);
+        setLocation(opp.location);
+        setDeadline(opp.deadline ? new Date(opp.deadline).toISOString().split('T')[0] : '');
+        setIsRolling(Boolean(opp.isRollingDeadline));
+        setDescription(opp.description);
+        if (opp.eligibleFields && opp.eligibleFields.length > 0) setSelectedFields(opp.eligibleFields);
+        if (opp.eligibleLevels && opp.eligibleLevels.length > 0) setSelectedLevels(opp.eligibleLevels);
+        setSkillsInput((opp.requiredSkills || []).join(', '));
+        setOriginalSourceUrl(opp.originalSourceUrl);
+        setApplicationUrl(opp.applicationUrl);
+        if (opp.compensation) {
+          setCompType(opp.compensation.type as any || 'stipend');
+          setCompAmount(opp.compensation.amount ? String(opp.compensation.amount) : '');
+        }
+      }
+      setIsLoadingExisting(false);
+    }).catch(() => {
+      setIsLoadingExisting(false);
+    });
+  }, [editId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +73,7 @@ export const SubmitOpportunityPage: React.FC = () => {
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
 
-      await opportunityService.submitOpportunity({
+      const payload = {
         title,
         organization: {
           name: orgName,
@@ -58,16 +92,22 @@ export const SubmitOpportunityPage: React.FC = () => {
         compensation: {
           type: compType,
           amount: compAmount ? parseInt(compAmount, 10) : undefined,
-          currency: 'ETB',
-          period: 'monthly',
+          currency: 'ETB' as const,
+          period: 'monthly' as const,
         },
         originalSourceUrl,
         applicationUrl,
-      });
+      };
+
+      if (editId) {
+        await opportunityService.updateOpportunity(editId, payload);
+      } else {
+        await opportunityService.submitOpportunity(payload);
+      }
 
       navigate('/submission-status?success=true');
-    } catch {
-      // ignore
+    } catch (err: any) {
+      alert(`Submission error: ${err.message || 'Validation failed'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -106,15 +146,21 @@ export const SubmitOpportunityPage: React.FC = () => {
     'phd',
   ];
 
+  if (isLoadingExisting) {
+    return <LoadingSpinner message="Loading opportunity for editing..." />;
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-2">
-          <PlusCircle className="w-7 h-7 text-brand-600" />
-          <span>{t('submit.title')}</span>
+          {editId ? <Edit className="w-7 h-7 text-brand-600" /> : <PlusCircle className="w-7 h-7 text-brand-600" />}
+          <span>{editId ? 'Edit Opportunity Submission' : t('submit.title')}</span>
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          {t('submit.subtitle')}
+          {editId
+            ? 'Update your submission details or respond to reviewer feedback. Material changes will be queued for re-verification.'
+            : t('submit.subtitle')}
         </p>
       </div>
 
