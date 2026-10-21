@@ -142,6 +142,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       setIsLoading(false);
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        // Ignore storage access errors
+      }
+      // Force navigation to public landing page and clear in-memory history
+      window.location.href = '/';
     }
   };
 
