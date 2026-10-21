@@ -40,6 +40,7 @@ export class AdminService {
 
     if (decision === 'approve') {
       opportunity.moderationStatus = 'approved';
+      opportunity.verificationStatus = 'VERIFIED';
       opportunity.publicationStatus = 'published';
       opportunity.reviewedBy = adminUser._id;
       opportunity.reviewNotes = reviewNotes;
@@ -48,6 +49,7 @@ export class AdminService {
       opportunity.sourceNotes = reviewNotes || 'Source verified by administrator.';
     } else {
       opportunity.moderationStatus = 'rejected';
+      opportunity.verificationStatus = 'REJECTED';
       opportunity.publicationStatus = 'draft';
       opportunity.reviewedBy = adminUser._id;
       opportunity.reviewNotes = reviewNotes;
