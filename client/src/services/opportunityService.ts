@@ -113,6 +113,17 @@ export const opportunityService = {
   },
 
   /**
+   * Updates an existing submitted opportunity.
+   */
+  async updateOpportunity(id: string, data: Partial<Opportunity>): Promise<Opportunity> {
+    const response = await ApiClient.request<Opportunity>(`/opportunities/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  },
+
+  /**
    * Alias for compatibility with SubmitOpportunityPage.
    */
   async submitOpportunity(data: Partial<Opportunity>): Promise<Opportunity> {
