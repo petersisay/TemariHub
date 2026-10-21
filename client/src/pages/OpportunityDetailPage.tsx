@@ -23,10 +23,12 @@ import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ReportModal } from '../components/opportunities/ReportModal';
+import { useAuth } from '../context/AuthContext';
 
 export const OpportunityDetailPage: React.FC = () => {
   const { idOrSlug } = useParams<{ idOrSlug: string }>();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
@@ -63,6 +65,47 @@ export const OpportunityDetailPage: React.FC = () => {
     await trackerService.addToTracker(opportunity, 'Interested');
     setIsTracked(true);
     showFeedback('Added to your Student Application Tracker as "Interested"');
+  };
+
+  const handleApplyClick = async () => {
+    if (!opportunity) return;
+
+    // Check if still verified and active
+    if (opportunity.verificationStatus !== 'VERIFIED' && !opportunity.organization.isVerified) {
+      alert('This listing is currently undergoing moderation review.');
+      return;
+    }
+
+    if (new Date(opportunity.deadline).getTime() < Date.now()) {
+      alert('The application deadline for this opportunity has already expired.');
+      return;
+    }
+
+    // Check valid URL
+    try {
+      const parsed = new URL(opportunity.applicationUrl);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        alert('Invalid application URL protocol.');
+        return;
+      }
+    } catch {
+      alert('Invalid application link.');
+      return;
+    }
+
+    // Open official application website safely
+    window.open(opportunity.applicationUrl, '_blank', 'noopener,noreferrer');
+
+    // For students, record into application tracker if not yet tracked
+    if (user && user.role === 'student' && !isTracked) {
+      try {
+        await trackerService.addToTracker(opportunity, 'Applied');
+        setIsTracked(true);
+        showFeedback('Opened official portal and recorded application in your tracker!');
+      } catch {
+        // Tracker entry is optional
+      }
+    }
   };
 
   const showFeedback = (msg: string) => {
@@ -160,42 +203,86 @@ export const OpportunityDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex sm:flex-col gap-2 shrink-0">
-            <a
-              href={opportunity.applicationUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 sm:flex-none"
-            >
-              <Button variant="primary" size="lg" className="w-full">
+          {/* Quick Action Buttons - Strictly Enforcing Three-Role Permission Matrix */}
+          {user?.role === 'admin' ? (
+            <div className="flex flex-col gap-2 shrink-0">
+              <Link to="/admin">
+                <Button variant="primary" size="md" className="w-full" icon={<ShieldCheck className="w-4 h-4" />}>
+                  Moderation Console
+                </Button>
+              </Link>
+              <a
+                href={opportunity.originalSourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" size="md" className="w-full" icon={<ExternalLink className="w-4 h-4" />}>
+                  Inspect Source
+                </Button>
+              </a>
+              <p className="text-[11px] text-slate-500 text-center max-w-[200px]">
+                Admin Mode: Student application tracker is reserved for students.
+              </p>
+            </div>
+          ) : user?.role === 'submitter' ? (
+            <div className="flex flex-col gap-2 shrink-0">
+              <a
+                href={opportunity.originalSourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" size="md" className="w-full" icon={<ExternalLink className="w-4 h-4" />}>
+                  Official Announcement
+                </Button>
+              </a>
+              <div className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 text-center max-w-[220px]">
+                Opportunity Submitters cannot apply through the student workflow.
+              </div>
+            </div>
+          ) : (
+            <div className="flex sm:flex-col gap-2 shrink-0">
+              <Button
+                variant="primary"
+                size="lg"
+                className="w-full"
+                onClick={handleApplyClick}
+                disabled={isPast}
+              >
                 <span>{t('opportunity.applyNow')}</span>
                 <ExternalLink className="w-4 h-4 ml-1" />
               </Button>
-            </a>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant={isSaved ? 'amber' : 'outline'}
-                size="md"
-                onClick={handleSaveToggle}
-                className="flex-1"
-                icon={<Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />}
-              >
-                {isSaved ? t('opportunity.saved') : t('opportunity.save')}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isSaved ? 'amber' : 'outline'}
+                  size="md"
+                  onClick={user ? handleSaveToggle : () => navigate('/login')}
+                  className="flex-1"
+                  icon={<Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />}
+                >
+                  {isSaved ? t('opportunity.saved') : t('opportunity.save')}
+                </Button>
 
-              <Button
-                variant={isTracked ? 'secondary' : 'outline'}
-                size="md"
-                onClick={isTracked ? () => navigate('/tracker') : handleTrackClick}
-                className="flex-1"
-                icon={<Kanban className="w-4 h-4" />}
-              >
-                {isTracked ? t('opportunity.alreadyTracked') : t('opportunity.track')}
-              </Button>
+                <Button
+                  variant={isTracked ? 'secondary' : 'outline'}
+                  size="md"
+                  onClick={user ? (isTracked ? () => navigate('/tracker') : handleTrackClick) : () => navigate('/login')}
+                  className="flex-1"
+                  icon={<Kanban className="w-4 h-4" />}
+                >
+                  {isTracked ? t('opportunity.alreadyTracked') : t('opportunity.track')}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+
+        {/* Official Application Portal & Integrity Notice */}
+        <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-900 flex items-start gap-2.5">
+          <ShieldCheck className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            <strong>Official Application Notice:</strong> When applying, you are directed directly to the official organization's verified portal. TemariHub provides verified announcements and personal application tracking; we do not submit external applications on your behalf.
+          </p>
         </div>
 
         {/* Verified Source Provenance Banner */}
