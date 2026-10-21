@@ -3,6 +3,7 @@ import { OpportunityService } from './opportunity.service.js';
 import {
   listOpportunitiesQuerySchema,
   submitOpportunitySchema,
+  updateOpportunitySchema,
   reportOpportunitySchema,
 } from './opportunity.schema.js';
 import { BadRequestError } from '../../utils/errors.js';
@@ -103,6 +104,29 @@ export class OpportunityController {
         success: true,
         message: 'Thank you for your report. Our moderation team will investigate.',
         data: report,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async updateMySubmission(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parsedBody = updateOpportunitySchema.safeParse(req.body);
+      if (!parsedBody.success) {
+        throw new BadRequestError('Validation failed for opportunity update', parsedBody.error.issues.map((i) => ({
+          field: i.path.join('.'),
+          message: i.message,
+        })));
+      }
+
+      const updated = await OpportunityService.updateSubmission(id, parsedBody.data, req.user!);
+
+      res.status(200).json({
+        success: true,
+        message: 'Submission updated successfully. It has been queued for re-verification.',
+        data: updated,
       });
     } catch (err) {
       next(err);
