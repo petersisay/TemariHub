@@ -86,3 +86,5 @@ export const reportOpportunitySchema = z.object({
   ]),
   details: z.string().min(5, 'Please provide detailed evidence or context').max(2000),
 });
+
+export const updateOpportunitySchema = submitOpportunitySchema.partial();
