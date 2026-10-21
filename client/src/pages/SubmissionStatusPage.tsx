@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { PlusCircle, Clock, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
+import { PlusCircle, Clock, CheckCircle2, XCircle, ExternalLink, Edit } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { useAuth } from '../context/AuthContext';
 import { opportunityService } from '../services/opportunityService';
@@ -129,6 +129,7 @@ export const SubmissionStatusPage: React.FC = () => {
                   <th className="px-4 py-3">Moderation State</th>
                   <th className="px-4 py-3">Source URL</th>
                   <th className="px-4 py-3">Reviewer Feedback</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -162,6 +163,15 @@ export const SubmissionStatusPage: React.FC = () => {
                     </td>
                     <td className="px-4 py-3.5 text-slate-500 max-w-xs">
                       {opp.sourceNotes || 'Pending initial review by platform administrator.'}
+                    </td>
+                    <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                      <Link
+                        to={`/submit?edit=${opp.id}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                      >
+                        <Edit className="w-3 h-3 text-slate-600" />
+                        <span>Edit</span>
+                      </Link>
                     </td>
                   </tr>
                 ))}
