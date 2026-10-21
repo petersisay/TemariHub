@@ -5,7 +5,7 @@
   <h3>Discover opportunities. Build your future.</h3>
   <p><em>ዕድሎችን ያግኙ። የወደፊትዎን ይገንቡ።</em></p>
 
-  [![CI Tests](https://img.shields.io/badge/tests-86%20passed-brightgreen.svg)](#-full-stack-mvp-implementation-status)
+  [![CI Tests](https://img.shields.io/badge/tests-125%20passed-brightgreen.svg)](#-full-stack-mvp-implementation-status)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.x%20Strict-blue.svg)](https://www.typescriptlang.org/)
   [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
   [![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
