@@ -52,6 +52,23 @@ router.post(
   OpportunityController.submit
 );
 
+// Submitter & Admin opportunity editing
+router.put(
+  '/:id',
+  requireAuth,
+  csrfProtection,
+  requireRole(['submitter', 'admin']),
+  OpportunityController.updateMySubmission
+);
+
+router.patch(
+  '/:id',
+  requireAuth,
+  csrfProtection,
+  requireRole(['submitter', 'admin']),
+  OpportunityController.updateMySubmission
+);
+
 // Report opportunity
 router.post(
   '/:id/report',
