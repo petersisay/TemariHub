@@ -281,4 +281,78 @@ export class OpportunityService {
 
     return report;
   }
+
+  /**
+   * Updates an existing submitted opportunity by its author or an administrator.
+   * If a verified opportunity is materially updated, re-verification is required.
+   */
+  static async updateSubmission(
+    id: string,
+    data: any,
+    user: IUser
+  ): Promise<IOpportunity> {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new BadRequestError('Invalid opportunity ID');
+    }
+
+    const opportunity = await Opportunity.findById(id);
+    if (!opportunity) {
+      throw new NotFoundError('Opportunity not found');
+    }
+
+    const isOwner = opportunity.submittedBy.toString() === user._id.toString();
+    const isAdmin = user.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      throw new BadRequestError('You do not have permission to edit this submission');
+    }
+
+    const now = new Date();
+    const isMaterialEdit =
+      (data.deadline && new Date(data.deadline).toISOString() !== opportunity.deadline.toISOString()) ||
+      (data.applicationUrl && data.applicationUrl !== opportunity.applicationUrl) ||
+      (data.originalSourceUrl && data.originalSourceUrl !== opportunity.originalSourceUrl) ||
+      (data.title && data.title !== opportunity.title) ||
+      (data.description && data.description !== opportunity.description);
+
+    // If submitter edits or material update occurs, reset to PENDING_REVIEW & draft
+    if (!isAdmin || isMaterialEdit) {
+      if (opportunity.verificationStatus === 'VERIFIED') {
+        opportunity.changeHistory.push({
+          date: now,
+          fieldChanged: 'content_updated',
+          oldValue: 'VERIFIED',
+          newValue: 'PENDING_REVIEW',
+          reason: 'Material changes submitted by author requiring re-verification',
+        });
+      }
+      opportunity.isMateriallyUpdated = true;
+      opportunity.verificationStatus = 'PENDING_REVIEW';
+      opportunity.moderationStatus = 'pending';
+      opportunity.publicationStatus = 'draft';
+    }
+
+    if (data.title) opportunity.title = data.title;
+    if (data.opportunityType) opportunity.opportunityType = data.opportunityType;
+    if (data.description) opportunity.description = data.description;
+    if (data.eligibleFields) opportunity.eligibleFields = data.eligibleFields;
+    if (data.eligibleLevels) opportunity.eligibleLevels = data.eligibleLevels;
+    if (data.requiredSkills) opportunity.requiredSkills = data.requiredSkills;
+    if (data.location) opportunity.location = data.location;
+    if (data.workArrangement) opportunity.workArrangement = data.workArrangement;
+    if (data.deadline) {
+      const d = new Date(data.deadline);
+      if (!isNaN(d.getTime())) opportunity.deadline = d;
+    }
+    if (typeof data.isRollingDeadline === 'boolean') opportunity.isRollingDeadline = data.isRollingDeadline;
+    if (data.compensation) opportunity.compensation = { ...opportunity.compensation, ...data.compensation };
+    if (data.originalSourceUrl) opportunity.originalSourceUrl = data.originalSourceUrl;
+    if (data.applicationUrl) opportunity.applicationUrl = data.applicationUrl;
+    if (data.sourceNotes) opportunity.sourceNotes = data.sourceNotes;
+    if (data.organization?.name) opportunity.organization.name = data.organization.name;
+    if (data.organization?.websiteUrl) opportunity.organization.websiteUrl = data.organization.websiteUrl;
+
+    await opportunity.save();
+    return opportunity;
+  }
 }
