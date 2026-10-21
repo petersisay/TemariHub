@@ -18,3 +18,11 @@ export const updateProfileSchema = z.object({
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+export const updatePreferencesSchema = z.object({
+  deadlineAlerts: z.boolean().optional(),
+  reviewAlerts: z.boolean().optional(),
+  language: z.enum(['en', 'am']).optional(),
+});
+
+export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;

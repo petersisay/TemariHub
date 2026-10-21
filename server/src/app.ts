@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
@@ -10,6 +12,7 @@ import { opportunityRoutes } from './modules/opportunities/opportunity.routes.js
 import { savedRoutes } from './modules/saved/saved.routes.js';
 import { trackerRoutes } from './modules/tracker/tracker.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { sourceRoutes } from './modules/sources/source.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -26,6 +29,7 @@ export function createApp(sessionStore?: session.Store): Express {
     helmet({
       contentSecurityPolicy: env.NODE_ENV === 'production' ? undefined : false,
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
 
@@ -97,6 +101,15 @@ export function createApp(sessionStore?: session.Store): Express {
     });
   });
 
+  // Serve uploaded assets (e.g. user profile avatars) statically
+  const baseUploadsDir = fs.existsSync(path.resolve(process.cwd(), 'server', 'uploads'))
+    ? path.resolve(process.cwd(), 'server', 'uploads')
+    : path.resolve(process.cwd(), 'uploads');
+  if (!fs.existsSync(baseUploadsDir)) {
+    fs.mkdirSync(baseUploadsDir, { recursive: true });
+  }
+  app.use('/uploads', express.static(baseUploadsDir));
+
   // Apply general API rate limiter to all api routes
   app.use(env.API_PREFIX, apiLimiter);
 
@@ -109,6 +122,7 @@ export function createApp(sessionStore?: session.Store): Express {
   app.use(`${env.API_PREFIX}/saved`, savedRoutes); // Compatibility alias
   app.use(`${env.API_PREFIX}/tracker`, trackerRoutes);
   app.use(`${env.API_PREFIX}/admin`, adminRoutes);
+  app.use(`${env.API_PREFIX}/sources`, sourceRoutes);
 
   // 404 handler for unmatched routes
   app.use(notFoundHandler);

@@ -64,6 +64,9 @@
   "opportunity": {
     "verified": "Verified Source",
     "unverified": "Community Submitted",
+    "needsRecheck": "Needs Recheck",
+    "underReview": "Under Review",
+    "updatedBadge": "Updated",
     "expired": "Deadline Passed",
     "closingSoon": "Closing Soon",
     "deadline": "Deadline:",
@@ -85,6 +88,8 @@
     "report": "Report Inaccuracy / Scam",
     "views": "views",
     "saves": "saves",
+    "emptyVerified": "No verified opportunities are available right now. Please check back later.",
+    "emptyDescription": "Our moderation team is actively reviewing submissions from verified organizations and universities. Please check back shortly.",
     "backToList": "Back to Opportunities"
   },
   "tracker": {
@@ -196,6 +201,10 @@
     "roleSubmitter": "Opportunity Submitter / Employer",
     "loginBtn": "Sign In",
     "registerBtn": "Create Account",
+    "continueWithGoogle": "Continue with Google",
+    "googleConfigPending": "Google Sign-In Configuration Pending",
+    "orContinueWithEmail": "Or continue with email",
+    "orRegisterWithEmail": "Or register with email",
     "noAccount": "Don't have an account?",
     "haveAccount": "Already registered?",
     "demoNotice": "Development Mode: Use any valid email/password to sign in. Toggle roles instantly from the top bar."
@@ -214,5 +223,22 @@
     "filter": "Filter",
     "all": "All",
     "back": "Back"
+  },
+  "avatar": {
+    "title": "Profile Picture",
+    "subtitle": "Upload a personal photo to represent your profile across TemariHub.",
+    "changePhoto": "Change Photo",
+    "uploadPhoto": "Upload Photo",
+    "savePhoto": "Save Photo",
+    "cancel": "Cancel",
+    "removePhoto": "Remove Custom Photo",
+    "removeConfirm": "Are you sure you want to remove your custom photo and restore your default/Google picture?",
+    "formatsNotice": "Supports JPEG, PNG, or WebP up to 5 MB. Photos are automatically cropped to a square 512×512 avatar.",
+    "uploadSuccess": "Profile picture updated successfully!",
+    "removeSuccess": "Custom picture removed. Restored standard avatar.",
+    "previewTitle": "New Photo Preview",
+    "customPhotoBadge": "Custom Photo",
+    "googlePhotoBadge": "Google Photo",
+    "defaultPhotoBadge": "Default Avatar"
   }
 }

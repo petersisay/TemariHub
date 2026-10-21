@@ -64,13 +64,28 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
               {t(typeTranslationKey)}
             </Badge>
 
-            {opportunity.organization.isVerified && (
-              <Badge variant="teal" size="sm" icon={<CheckCircle2 className="w-3 h-3 text-teal-600" />}>
+            {/* Verification Status Badges */}
+            {opportunity.verificationStatus === 'VERIFIED' || opportunity.organization.isVerified ? (
+              <Badge variant="teal" size="sm" icon={<CheckCircle2 className="w-3 h-3 text-emerald-600" />}>
                 {t('opportunity.verified')}
               </Badge>
+            ) : opportunity.verificationStatus === 'NEEDS_RECHECK' ? (
+              <Badge variant="warning" size="sm">
+                {t('opportunity.needsRecheck')}
+              </Badge>
+            ) : opportunity.verificationStatus === 'PENDING_REVIEW' ? (
+              <Badge variant="neutral" size="sm">
+                {t('opportunity.underReview')}
+              </Badge>
+            ) : null}
+
+            {opportunity.isMateriallyUpdated && (
+              <span className="inline-flex items-center text-[10px] font-semibold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full border border-sky-200">
+                {t('opportunity.updatedBadge')}
+              </span>
             )}
 
-            {isPast || opportunity.publicationStatus === 'expired' ? (
+            {isPast || opportunity.publicationStatus === 'expired' || opportunity.verificationStatus === 'EXPIRED' ? (
               <Badge variant="danger" size="sm">
                 {t('opportunity.expired')}
               </Badge>
@@ -120,6 +135,32 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
           </div>
         </div>
 
+        {/* Source Name & Last Verified Date */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 mb-3 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="font-semibold text-slate-600 shrink-0">Source:</span>
+            <span className="truncate font-medium text-slate-800">
+              {opportunity.sourceName || `${opportunity.organization.name} Portal`}
+            </span>
+          </div>
+
+          {(opportunity.lastVerifiedDate || opportunity.lastCheckedDate) && (
+            <div className="flex items-center gap-1 text-emerald-700 font-medium shrink-0">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span>
+                Verified{' '}
+                {new Date(
+                  opportunity.lastVerifiedDate || opportunity.lastCheckedDate || ''
+                ).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Skills Pills */}
         <div className="flex flex-wrap gap-1 mb-4">
           {opportunity.requiredSkills.slice(0, 3).map((skill) => (
@@ -138,8 +179,8 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
         </div>
       </div>
 
-      {/* Bottom Deadline & Action Link */}
-      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+      {/* Bottom Deadline, Official Link & Action Link */}
+      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-1.5 text-slate-500">
           <Calendar className="w-3.5 h-3.5 text-slate-400" />
           <span>
@@ -153,13 +194,27 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
           </span>
         </div>
 
-        <Link
-          to={`/opportunities/${opportunity.slug}`}
-          className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-800 transition-colors"
-        >
-          <span>{t('common.view')}</span>
-          <ExternalLink className="w-3 h-3" />
-        </Link>
+        <div className="flex items-center gap-3">
+          {opportunity.applicationUrl && (
+            <a
+              href={opportunity.applicationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>Apply Official</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
+
+          <Link
+            to={`/opportunities/${opportunity.slug}`}
+            className="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-800 transition-colors"
+          >
+            <span>{t('common.view')}</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

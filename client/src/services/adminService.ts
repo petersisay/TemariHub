@@ -1,10 +1,5 @@
 import { Opportunity, OpportunityReport, AuditLogItem } from '../types';
 import { ApiClient } from './api';
-import {
-  INITIAL_FIXTURE_OPPORTUNITIES,
-  INITIAL_FIXTURE_REPORTS,
-  INITIAL_FIXTURE_AUDIT_LOGS,
-} from './fixtures';
 
 export const adminService = {
   /**
@@ -15,10 +10,8 @@ export const adminService = {
       const response = await ApiClient.request<Opportunity[]>('/admin/moderation/queue');
       return response.data || [];
     } catch (err) {
-      console.warn('API /admin/moderation/queue unavailable, local fallback:', err);
-      return INITIAL_FIXTURE_OPPORTUNITIES.filter(
-        (opp) => opp.moderationStatus === 'pending'
-      );
+      console.warn('API /admin/moderation/queue request error:', err);
+      return [];
     }
   },
 
@@ -53,8 +46,8 @@ export const adminService = {
       const response = await ApiClient.request<OpportunityReport[]>('/admin/reports');
       return response.data || [];
     } catch (err) {
-      console.warn('API /admin/reports unavailable, local fallback:', err);
-      return [...INITIAL_FIXTURE_REPORTS];
+      console.warn('API /admin/reports request error:', err);
+      return [];
     }
   },
 
@@ -84,9 +77,105 @@ export const adminService = {
       const response = await ApiClient.request<AuditLogItem[]>('/admin/audit-logs');
       return response.data || [];
     } catch (err) {
-      console.warn('API /admin/audit-logs unavailable, local fallback:', err);
-      return [...INITIAL_FIXTURE_AUDIT_LOGS];
+      console.warn('API /admin/audit-logs request error:', err);
+      return [];
     }
+  },
+
+  /**
+   * Retrieves opportunities awaiting verification review.
+   */
+  async getVerificationQueue(status?: string): Promise<Opportunity[]> {
+    try {
+      const url = status
+        ? `/admin/opportunities/verification-queue?status=${status}`
+        : '/admin/opportunities/verification-queue';
+      const response = await ApiClient.request<Opportunity[]>(url);
+      return response.data || [];
+    } catch (err) {
+      console.warn('API getVerificationQueue unavailable:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Decides verification status (VERIFIED, REJECTED, NEEDS_RECHECK) with evidence.
+   */
+  async decideVerification(
+    opportunityId: string,
+    status: 'VERIFIED' | 'REJECTED' | 'NEEDS_RECHECK',
+    evidenceNotes?: string
+  ): Promise<Opportunity> {
+    try {
+      const response = await ApiClient.request<Opportunity>(
+        `/admin/opportunities/${opportunityId}/verify`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ status, evidenceNotes }),
+        }
+      );
+      return response.data;
+    } catch (err) {
+      console.warn('API decideVerification failed:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * Retrieves material changes detected by source monitoring.
+   */
+  async getChangeHistory(): Promise<any[]> {
+    try {
+      const response = await ApiClient.request<any[]>('/admin/opportunities/change-history');
+      return response.data || [];
+    } catch (err) {
+      console.warn('API getChangeHistory unavailable:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Retrieves registry of trusted opportunity sources.
+   */
+  async getTrustedSources(): Promise<any[]> {
+    try {
+      const response = await ApiClient.request<any[]>('/sources');
+      return response.data || [];
+    } catch (err) {
+      console.warn('API /sources unavailable:', err);
+      return [];
+    }
+  },
+
+  /**
+   * Triggers an immediate source check for a single source.
+   */
+  async triggerSourceCheck(sourceId: string): Promise<any> {
+    const response = await ApiClient.request(`/sources/${sourceId}/check`, {
+      method: 'POST',
+    });
+    return response.data;
+  },
+
+  /**
+   * Triggers immediate monitoring run across all approved sources.
+   */
+  async checkAllSources(): Promise<any> {
+    const response = await ApiClient.request('/sources/check-all', {
+      method: 'POST',
+    });
+    return response.data;
+  },
+
+  /**
+   * Registers a new trusted source.
+   */
+  async createTrustedSource(sourceData: any): Promise<any> {
+    const response = await ApiClient.request('/sources', {
+      method: 'POST',
+      body: JSON.stringify(sourceData),
+    });
+    return response.data;
   },
 
   /**

@@ -1,6 +1,5 @@
 import { Opportunity, OpportunityFilterParams, ReportReason } from '../types';
 import { ApiClient } from './api';
-import { INITIAL_FIXTURE_OPPORTUNITIES } from './fixtures';
 
 export const opportunityService = {
   /**
@@ -72,8 +71,13 @@ export const opportunityService = {
         totalPages: response.data.totalPages ?? 1,
       };
     } catch (err) {
-      console.warn('Backend API unavailable, falling back to local dataset:', err);
-      return this.getLocalFilteredOpportunities(params);
+      console.warn('Backend API request error:', err);
+      return {
+        items: [],
+        total: 0,
+        page: 1,
+        totalPages: 1,
+      };
     }
   },
 
@@ -86,9 +90,7 @@ export const opportunityService = {
       return response.data;
     } catch (err) {
       console.warn(`Failed to fetch opportunity ${idOrSlug} from API:`, err);
-      return INITIAL_FIXTURE_OPPORTUNITIES.find(
-        (o) => o.id === idOrSlug || o.slug === idOrSlug
-      );
+      return undefined;
     }
   },
 
@@ -148,48 +150,15 @@ export const opportunityService = {
   },
 
   /**
-   * Offline fallback for unit tests and offline demonstration.
+   * Retrieves all opportunities submitted by the currently authenticated user.
    */
-  getLocalFilteredOpportunities(params: OpportunityFilterParams = {}) {
-    let results = [...INITIAL_FIXTURE_OPPORTUNITIES];
-
-    results = results.filter((opp) => {
-      if (opp.moderationStatus !== 'approved' || opp.publicationStatus !== 'published') {
-        if (!params.includeExpired || opp.publicationStatus !== 'expired') {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    if (params.search && params.search.trim() !== '') {
-      const q = params.search.toLowerCase().trim();
-      results = results.filter(
-        (opp) =>
-          opp.title.toLowerCase().includes(q) ||
-          opp.organization.name.toLowerCase().includes(q) ||
-          opp.description.toLowerCase().includes(q) ||
-          opp.requiredSkills.some((s) => s.toLowerCase().includes(q))
-      );
+  async getMySubmissions(): Promise<Opportunity[]> {
+    try {
+      const response = await ApiClient.request<Opportunity[]>('/opportunities/my-submissions');
+      return response.data || [];
+    } catch (err) {
+      console.warn('Failed to fetch user submissions:', err);
+      return [];
     }
-
-    if (params.types && params.types.length > 0) {
-      results = results.filter((opp) => params.types!.includes(opp.opportunityType));
-    }
-
-    if (params.arrangements && params.arrangements.length > 0) {
-      results = results.filter((opp) => params.arrangements!.includes(opp.workArrangement));
-    }
-
-    const total = results.length;
-    const page = params.page || 1;
-    const limit = params.limit || 12;
-
-    return {
-      items: results.slice((page - 1) * limit, page * limit),
-      total,
-      page,
-      totalPages: Math.ceil(total / limit) || 1,
-    };
   },
 };

@@ -4,9 +4,10 @@ import { UserPlus, Shield } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
+import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
 
 export const RegisterPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -41,12 +42,29 @@ export const RegisterPage: React.FC = () => {
         <p className="text-xs text-slate-500">{t('auth.registerSubtitle')}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-4">
-        {errorMessage && (
-          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            {errorMessage}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
+        {/* Google-First Sign Up Section */}
+        <div>
+          <GoogleAuthButton mode="register" />
+        </div>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
           </div>
-        )}
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-slate-400 font-medium">
+              {language === 'am' ? 'ወይም በኢሜይል ይመዝገቡ' : 'Or register with email'}
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {errorMessage && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+              {errorMessage}
+            </div>
+          )}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
             {t('auth.fullName')}
@@ -56,7 +74,7 @@ export const RegisterPage: React.FC = () => {
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Kidus Hailu"
+            placeholder="Enter your full name"
             className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
@@ -70,7 +88,7 @@ export const RegisterPage: React.FC = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="e.g. kidus@astu.edu.et"
+            placeholder="e.g. student@astu.edu.et"
             className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
@@ -119,6 +137,7 @@ export const RegisterPage: React.FC = () => {
           </Link>
         </div>
       </form>
+      </div>
     </div>
   );
 };

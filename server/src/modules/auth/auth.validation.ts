@@ -42,6 +42,13 @@ export const registerSchema = z
   }));
 
 
+export const googleAuthSchema = z.object({
+  idToken: z
+    .string({ required_error: 'Google ID token is required' })
+    .min(10, 'Google ID token must be a valid token string')
+    .trim(),
+});
+
 export const loginSchema = z.object({
   email: z
     .string({ required_error: 'Email address is required' })
@@ -55,3 +62,4 @@ export const loginSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;

@@ -10,20 +10,19 @@ import {
   Globe,
   Menu,
   X,
-  Sparkles,
   LogOut,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useTranslation, Language } from '../../context/I18nContext';
 import { useAuth } from '../../context/AuthContext';
-import { UserRole } from '../../types';
 import { Badge } from './Badge';
+import { Avatar } from './Avatar';
 
 export const Navbar: React.FC = () => {
   const { t, language, setLanguage } = useTranslation();
-  const { user, role, switchDemoRole, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
   const toggleLanguage = () => {
     const nextLang: Language = language === 'en' ? 'am' : 'en';
@@ -43,52 +42,6 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
-      {/* Demo Role Switcher Ribbon for Phase 1 verification */}
-      <div className="bg-navy-950 text-white text-xs px-4 py-1.5 flex items-center justify-between border-b border-navy-800">
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
-          </span>
-          <span className="text-slate-300 hidden sm:inline">
-            Phase 1 Frontend Foundation — Live UI Verification
-          </span>
-          <span className="text-slate-300 sm:hidden">TemariHub MVP</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-slate-400 hidden md:inline">{t('nav.demoRole')}:</span>
-          <div className="relative">
-            <button
-              onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-              className="bg-navy-800 hover:bg-navy-700 text-amber-300 font-medium px-2.5 py-0.5 rounded border border-navy-700 flex items-center gap-1 transition-colors"
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span className="capitalize">{role}</span>
-              <span className="text-[10px] text-slate-400">▼</span>
-            </button>
-            {roleMenuOpen && (
-              <div className="absolute right-0 mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 text-slate-800 z-50 animate-in fade-in zoom-in-95">
-                {(['student', 'submitter', 'admin'] as UserRole[]).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => {
-                      switchDemoRole(r);
-                      setRoleMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs capitalize hover:bg-brand-50 flex items-center justify-between ${
-                      role === r ? 'font-bold text-brand-600 bg-brand-50/50' : 'text-slate-700'
-                    }`}
-                  >
-                    <span>{r} View</span>
-                    {role === r && <span className="text-brand-600">✓</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Brand Logo */}
@@ -160,20 +113,27 @@ export const Navbar: React.FC = () => {
 
             {/* Profile or Login */}
             {user ? (
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+              <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
                 <Link
                   to={role === 'student' ? '/profile' : role === 'admin' ? '/admin' : '/submission-status'}
                   className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors"
                 >
-                  <img
-                    src={user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64'}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                  <Avatar
+                    src={user.avatarUrl}
+                    name={user.name}
+                    size="sm"
                   />
-                  <div className="text-left">
+                  <div className="text-left hidden sm:block">
                     <p className="text-xs font-semibold text-slate-900 leading-tight">{user.name}</p>
                     <p className="text-[10px] text-slate-500 capitalize">{user.role}</p>
                   </div>
+                </Link>
+                <Link
+                  to="/settings"
+                  title={t('nav.settings')}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-slate-100 transition-colors"
+                >
+                  <SettingsIcon className="w-4 h-4" />
                 </Link>
                 <button
                   onClick={() => logout()}
@@ -284,10 +244,30 @@ export const Navbar: React.FC = () => {
             </Link>
           )}
 
+          {user && (
+            <Link
+              to="/settings"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              <SettingsIcon className="w-4 h-4 text-slate-500" />
+              <span>{t('nav.settings')}</span>
+            </Link>
+          )}
+
           <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-xs text-slate-500 font-medium">
-              {user ? `Logged in as ${user.name}` : 'Not signed in'}
-            </span>
+            <div className="flex items-center gap-2">
+              {user && (
+                <Avatar
+                  src={user.avatarUrl}
+                  name={user.name}
+                  size="xs"
+                />
+              )}
+              <span className="text-xs text-slate-500 font-medium">
+                {user ? user.name : 'Not signed in'}
+              </span>
+            </div>
             {user ? (
               <button
                 onClick={() => {

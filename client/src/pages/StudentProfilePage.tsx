@@ -3,9 +3,10 @@ import { UserCheck, CheckCircle2, Save } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { profileService } from '../services/profileService';
 import { StudentProfile, DegreeLevel, WorkArrangement } from '../types';
-import { ETHIOPIAN_UNIVERSITIES, STEM_FIELDS_OF_STUDY } from '../services/fixtures';
+import { ETHIOPIAN_UNIVERSITIES, STEM_FIELDS_OF_STUDY } from '../constants/academic';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { ProfilePictureEditor } from '../components/profile/ProfilePictureEditor';
 
 export const StudentProfilePage: React.FC = () => {
   const { t } = useTranslation();
@@ -85,6 +86,9 @@ export const StudentProfilePage: React.FC = () => {
           {t('profile.subtitle')}
         </p>
       </div>
+
+      {/* Profile Picture Management */}
+      <ProfilePictureEditor />
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
         {/* University & Degree */}

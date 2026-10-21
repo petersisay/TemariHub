@@ -44,6 +44,16 @@ export function errorHandler(
     message = `Invalid format for identifier: ${err.value}`;
   }
 
+  // Handle Multer upload errors (size limit, file counts)
+  if (err.name === 'MulterError') {
+    statusCode = 400;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      message = 'Image file exceeds the 5 MB maximum size limit.';
+    } else {
+      message = `Upload error: ${err.message}`;
+    }
+  }
+
   if (statusCode === 500 && env.NODE_ENV !== 'test') {
     console.error('Unhandled Server Error:', err);
   }

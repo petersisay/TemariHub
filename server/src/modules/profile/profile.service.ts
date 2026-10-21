@@ -1,8 +1,8 @@
 import { StudentProfile, IStudentProfile } from '../../models/StudentProfile.js';
-import { IUser } from '../../models/User.js';
+import { User, IUser } from '../../models/User.js';
 import { ForbiddenError, NotFoundError } from '../../utils/errors.js';
 import { checkOwnership } from '../../middleware/auth.middleware.js';
-import { UpdateProfileInput } from './profile.validation.js';
+import { UpdateProfileInput, UpdatePreferencesInput } from './profile.validation.js';
 
 export class ProfileService {
   async getProfile(targetUserId: string, requestingUser: IUser): Promise<IStudentProfile> {
@@ -35,6 +35,25 @@ export class ProfileService {
     );
 
     return profile;
+  }
+
+  async updatePreferences(
+    userId: string,
+    preferences: UpdatePreferencesInput
+  ): Promise<IUser> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new NotFoundError('User account not found.');
+    }
+
+    user.preferences = {
+      deadlineAlerts: preferences.deadlineAlerts ?? user.preferences?.deadlineAlerts ?? true,
+      reviewAlerts: preferences.reviewAlerts ?? user.preferences?.reviewAlerts ?? true,
+      language: preferences.language ?? user.preferences?.language ?? 'en',
+    };
+
+    await user.save();
+    return user;
   }
 }
 

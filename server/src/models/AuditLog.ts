@@ -5,9 +5,12 @@ export type AuditAction =
   | 'opportunity_reject'
   | 'opportunity_expire'
   | 'opportunity_delete'
+  | 'opportunity_discovered'
   | 'report_resolve'
   | 'user_role_change'
-  | 'admin_provisioned';
+  | 'admin_provisioned'
+  | 'user_registered'
+  | 'account_linked';
 
 export type AuditTargetType = 'opportunity' | 'report' | 'user';
 
@@ -37,9 +40,12 @@ const AuditLogSchema = new Schema<IAuditLog>(
         'opportunity_reject',
         'opportunity_expire',
         'opportunity_delete',
+        'opportunity_discovered',
         'report_resolve',
         'user_role_change',
         'admin_provisioned',
+        'user_registered',
+        'account_linked',
       ],
       required: true,
     },

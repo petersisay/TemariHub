@@ -15,6 +15,12 @@ router.get('/opportunities', AdminController.getQueue); // Alias
 router.put('/moderation/:id/decision', csrfProtection, AdminController.decideModeration);
 router.patch('/opportunities/:id/moderation', csrfProtection, AdminController.decideModeration); // Alias
 
+// Verification workflow & continuous updates
+router.get('/opportunities/verification-queue', AdminController.getVerificationQueue);
+router.post('/opportunities/:id/verify', csrfProtection, AdminController.decideVerification);
+router.patch('/opportunities/:id/verify', csrfProtection, AdminController.decideVerification);
+router.get('/opportunities/change-history', AdminController.getChangeHistory);
+
 // User reports
 router.get('/reports', AdminController.getReports);
 router.put('/reports/:id/resolve', csrfProtection, AdminController.resolveReport);

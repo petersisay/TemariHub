@@ -2,7 +2,7 @@ import React from 'react';
 import { Filter, RotateCcw } from 'lucide-react';
 import { OpportunityFilterParams, OpportunityType, WorkArrangement, DegreeLevel } from '../../types';
 import { useTranslation } from '../../context/I18nContext';
-import { STEM_FIELDS_OF_STUDY } from '../../services/fixtures';
+import { STEM_FIELDS_OF_STUDY } from '../../constants/academic';
 
 interface OpportunityFiltersProps {
   filters: OpportunityFilterParams;
@@ -136,6 +136,44 @@ export const OpportunityFilters: React.FC<OpportunityFiltersProps> = ({
               </label>
             );
           })}
+        </div>
+      </div>
+
+      {/* Location Scope (Ethiopia, Remote, International) */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-700 mb-2">
+          Scope / Geographic Focus
+        </label>
+        <div className="space-y-1.5">
+          {[
+            { id: 'all', label: 'All Locations' },
+            { id: 'ethiopia', label: 'Ethiopia-based Opportunities' },
+            { id: 'remote', label: 'Remote Opportunities' },
+            { id: 'international', label: 'International Opportunities' },
+          ].map((scope) => (
+            <label
+              key={scope.id}
+              className="flex items-center gap-2 text-xs text-slate-600 hover:text-slate-900 cursor-pointer select-none"
+            >
+              <input
+                type="radio"
+                name="locationScope"
+                checked={
+                  (!filters.locationScope && scope.id === 'all') ||
+                  filters.locationScope === scope.id
+                }
+                onChange={() =>
+                  onChange({
+                    ...filters,
+                    locationScope: scope.id === 'all' ? undefined : (scope.id as any),
+                    page: 1,
+                  })
+                }
+                className="text-brand-600 focus:ring-brand-500 h-3.5 w-3.5"
+              />
+              <span>{scope.label}</span>
+            </label>
+          ))}
         </div>
       </div>
 

@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Sparkles } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 import { Button } from '../components/common/Button';
+import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
 
 export const LoginPage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('kidus.hailu@astu.edu.et');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -33,29 +34,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoSignIn = async (demoRole: UserRole) => {
-    setErrorMessage(null);
-    const demoAccounts: Record<UserRole, { email: string; pass: string }> = {
-      student: { email: 'kidus@astu.edu.et', pass: 'StudentPass2026!' },
-      submitter: { email: 'careers@safaricom.et', pass: 'SubmitterPass2026!' },
-      admin: { email: 'admin@temarihub.et', pass: 'AdminPass2026!' },
-    };
-
-    const cred = demoAccounts[demoRole];
-    setEmail(cred.email);
-    setPassword(cred.pass);
-    setRole(demoRole);
-
-    try {
-      await login(cred.email, cred.pass, demoRole);
-      if (demoRole === 'admin') navigate('/admin');
-      else if (demoRole === 'submitter') navigate('/submission-status');
-      else navigate('/dashboard');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Authentication failed. Ensure backend server is running.');
-    }
-  };
-
   return (
     <div className="max-w-md mx-auto px-4 py-12 space-y-6">
       <div className="text-center space-y-2">
@@ -66,43 +44,29 @@ export const LoginPage: React.FC = () => {
         <p className="text-xs text-slate-500">{t('auth.loginSubtitle')}</p>
       </div>
 
-      {/* Demo Quick-Sign-In Pills */}
-      <div className="p-4 bg-navy-950 rounded-2xl border border-navy-800 text-white space-y-3 shadow-md">
-        <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
-          <Sparkles className="w-4 h-4" />
-          <span>One-Click Role Switcher (Phase 1 Evaluation)</span>
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
+        {/* Google-First Sign In Section */}
+        <div>
+          <GoogleAuthButton mode="login" />
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            onClick={() => handleDemoSignIn('student')}
-            className="px-2 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 text-xs font-semibold text-slate-200 border border-navy-700 transition-colors"
-          >
-            Student
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDemoSignIn('submitter')}
-            className="px-2 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 text-xs font-semibold text-slate-200 border border-navy-700 transition-colors"
-          >
-            Submitter
-          </button>
-          <button
-            type="button"
-            onClick={() => handleDemoSignIn('admin')}
-            className="px-2 py-1.5 rounded-lg bg-navy-800 hover:bg-navy-700 text-xs font-semibold text-slate-200 border border-navy-700 transition-colors"
-          >
-            Admin
-          </button>
-        </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-4">
-        {errorMessage && (
-          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-            {errorMessage}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
           </div>
-        )}
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-slate-400 font-medium">
+              {language === 'am' ? 'ወይም በኢሜይል ይቀጥሉ' : 'Or continue with email'}
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {errorMessage && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+              {errorMessage}
+            </div>
+          )}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
             {t('auth.email')}
@@ -155,6 +119,7 @@ export const LoginPage: React.FC = () => {
           </Link>
         </div>
       </form>
+      </div>
     </div>
   );
 };

@@ -5,7 +5,6 @@ import {
   Opportunity,
 } from '../types';
 import { ApiClient } from './api';
-import { INITIAL_FIXTURE_SAVED, INITIAL_FIXTURE_TRACKER } from './fixtures';
 
 export const trackerService = {
   // ----------------------------------------------------
@@ -17,8 +16,8 @@ export const trackerService = {
       const response = await ApiClient.request<SavedOpportunityItem[]>('/saved-opportunities');
       return response.data || [];
     } catch (err) {
-      console.warn('API /saved-opportunities unavailable, using local fallback:', err);
-      return [...INITIAL_FIXTURE_SAVED];
+      console.warn('API /saved-opportunities request error:', err);
+      return [];
     }
   },
 
@@ -64,8 +63,8 @@ export const trackerService = {
       const response = await ApiClient.request<ApplicationTrackerItem[]>('/tracker');
       return response.data || [];
     } catch (err) {
-      console.warn('API /tracker unavailable, using local fallback:', err);
-      return [...INITIAL_FIXTURE_TRACKER];
+      console.warn('API /tracker request error:', err);
+      return [];
     }
   },
 

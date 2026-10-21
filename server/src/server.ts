@@ -23,17 +23,33 @@ async function startServer(): Promise<void> {
       }
     }
 
-    // Auto-populate verified STEM opportunities if database is brand new
+    // Trusted sources registry initialization (official Ethiopian institutions)
+
+    // Auto-populate trusted sources registry if empty
     try {
-      const { Opportunity } = await import('./models/Opportunity.js');
-      const count = await Opportunity.countDocuments();
-      if (count === 0) {
-        console.log('[TemariHub Server] Database is empty. Auto-populating initial verified Ethiopian STEM opportunities...');
-        const { seedOpportunities } = await import('./scripts/seedOpportunities.js');
-        await seedOpportunities(false);
+      const { TrustedSource } = await import('./models/TrustedSource.js');
+      const sourceCount = await TrustedSource.countDocuments();
+      if (sourceCount === 0) {
+        console.log('[TemariHub Server] Initializing verified Ethiopian trusted sources registry...');
+        const { seedTrustedSources } = await import('./scripts/seedTrustedSources.js');
+        await seedTrustedSources(false);
       }
     } catch (err: any) {
-      console.warn(`[TemariHub Server] Auto-seed opportunities warning: ${err.message}`);
+      console.warn(`[TemariHub Server] Auto-seed trusted sources warning: ${err.message}`);
+    }
+
+    // Start background source monitor and deadline sweep
+    if (env.ENABLE_SOURCE_MONITORING) {
+      const MONITOR_INTERVAL_MS = (env.SOURCE_MONITOR_INTERVAL_HOURS || 6) * 60 * 60 * 1000;
+      const monitorTimer = setInterval(async () => {
+        try {
+          const { SourceMonitorService } = await import('./modules/sources/sourceMonitor.service.js');
+          await SourceMonitorService.checkAllSources();
+        } catch (err: any) {
+          console.warn(`[TemariHub Server] Background source monitoring error: ${err.message}`);
+        }
+      }, MONITOR_INTERVAL_MS);
+      monitorTimer.unref(); // Don't hold node process alive if shutting down
     }
 
     const server = app.listen(env.PORT, () => {

@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
-import { Opportunity, IOpportunity } from '../../models/Opportunity.js';
+import { Opportunity, IOpportunity, VerificationStatus } from '../../models/Opportunity.js';
 import { OpportunityReport, IOpportunityReport } from '../../models/OpportunityReport.js';
+import { TrustedSource } from '../../models/TrustedSource.js';
 import { AuditLog, IAuditLog } from '../../models/AuditLog.js';
-import { User } from '../../models/User.js';
+import { User, IUser } from '../../models/User.js';
 import { ApplicationTracker } from '../../models/ApplicationTracker.js';
-import { IUser } from '../../models/User.js';
 import { NotFoundError, BadRequestError } from '../../utils/errors.js';
 
 export class AdminService {
@@ -162,6 +162,129 @@ export class AdminService {
   }
 
   /**
+   * Retrieves opportunities grouped or filtered by verification status.
+   */
+  static async getVerificationQueue(statusFilter?: string): Promise<IOpportunity[]> {
+    const filter: any = {};
+    if (statusFilter && statusFilter !== 'ALL') {
+      filter.verificationStatus = statusFilter;
+    } else if (!statusFilter) {
+      filter.verificationStatus = { $in: ['PENDING_REVIEW', 'NEEDS_RECHECK'] };
+    }
+
+    return Opportunity.find(filter)
+      .populate('submittedBy', 'name email role')
+      .populate('trustedSourceId', 'name category officialUrl monitoringStatus')
+      .sort({ createdAt: -1 });
+  }
+
+  /**
+   * Administrator decides on opportunity verification (VERIFIED, REJECTED, NEEDS_RECHECK).
+   */
+  static async decideVerification(
+    opportunityId: string,
+    status: VerificationStatus,
+    evidenceNotes: string | undefined,
+    adminUser: IUser
+  ): Promise<IOpportunity> {
+    if (!mongoose.Types.ObjectId.isValid(opportunityId)) {
+      throw new BadRequestError('Invalid opportunity ID');
+    }
+
+    const opportunity = await Opportunity.findById(opportunityId);
+    if (!opportunity) {
+      throw new NotFoundError('Opportunity not found');
+    }
+
+    const now = new Date();
+    const oldStatus = opportunity.verificationStatus;
+
+    opportunity.verificationStatus = status;
+    opportunity.reviewedBy = adminUser._id;
+    opportunity.reviewNotes = evidenceNotes;
+    opportunity.lastVerifiedDate = now;
+    opportunity.lastCheckedDate = now;
+
+    if (evidenceNotes) {
+      opportunity.verificationEvidence = evidenceNotes;
+    }
+
+    if (status === 'VERIFIED') {
+      opportunity.moderationStatus = 'approved';
+      opportunity.publicationStatus = 'published';
+      opportunity.publicationDate = opportunity.publicationDate || now;
+    } else if (status === 'REJECTED') {
+      opportunity.moderationStatus = 'rejected';
+      opportunity.publicationStatus = 'draft';
+    } else if (status === 'NEEDS_RECHECK') {
+      opportunity.moderationStatus = 'pending';
+    }
+
+    opportunity.changeHistory.push({
+      date: now,
+      fieldChanged: 'verificationStatus',
+      oldValue: oldStatus,
+      newValue: status,
+      reason: evidenceNotes || `Admin moderation decision: ${status}`,
+    });
+
+    await opportunity.save();
+
+    await AuditLog.create({
+      actorId: adminUser._id,
+      action: status === 'VERIFIED' ? 'opportunity_approve' : 'opportunity_reject',
+      targetType: 'opportunity',
+      targetId: opportunity._id,
+      ipAddress: '127.0.0.1',
+      userAgent: 'TemariHub Admin Console',
+      metadata: {
+        opportunityTitle: opportunity.title,
+        oldStatus,
+        newStatus: status,
+        evidenceNotes: evidenceNotes || '',
+      },
+      timestamp: now,
+    });
+
+    return opportunity;
+  }
+
+  /**
+   * Retrieves material updates detected by continuous source monitoring.
+   */
+  static async getMaterialChangeHistory(limit: number = 50): Promise<any[]> {
+    const opps = await Opportunity.find({
+      $or: [
+        { isMateriallyUpdated: true },
+        { 'changeHistory.0': { $exists: true } },
+      ],
+    })
+      .select('title slug organization changeHistory lastCheckedDate verificationStatus')
+      .sort({ updatedAt: -1 })
+      .limit(limit);
+
+    const flatHistory: any[] = [];
+    for (const opp of opps) {
+      for (const item of opp.changeHistory) {
+        flatHistory.push({
+          opportunityId: opp._id.toString(),
+          opportunityTitle: opp.title,
+          organizationName: opp.organization?.name,
+          date: item.date,
+          fieldChanged: item.fieldChanged,
+          oldValue: item.oldValue,
+          newValue: item.newValue,
+          reason: item.reason,
+          sourceEvidence: item.sourceEvidence,
+          verificationStatus: opp.verificationStatus,
+        });
+      }
+    }
+
+    return flatHistory.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  /**
    * Aggregates platform-wide metrics for the administrator dashboard.
    */
   static async getPlatformStats(): Promise<any> {
@@ -172,6 +295,13 @@ export class AdminService {
       totalSubmitters,
       totalTracked,
       pendingReports,
+      verifiedCount,
+      pendingVerificationCount,
+      needsRecheckCount,
+      expiredCount,
+      totalSources,
+      healthySources,
+      failingSources,
     ] = await Promise.all([
       Opportunity.countDocuments({ publicationStatus: 'published', moderationStatus: 'approved' }),
       Opportunity.countDocuments({ moderationStatus: 'pending' }),
@@ -179,6 +309,13 @@ export class AdminService {
       User.countDocuments({ role: 'submitter' }),
       ApplicationTracker.countDocuments(),
       OpportunityReport.countDocuments({ status: 'pending' }),
+      Opportunity.countDocuments({ verificationStatus: 'VERIFIED' }),
+      Opportunity.countDocuments({ verificationStatus: 'PENDING_REVIEW' }),
+      Opportunity.countDocuments({ verificationStatus: 'NEEDS_RECHECK' }),
+      Opportunity.countDocuments({ verificationStatus: 'EXPIRED' }),
+      TrustedSource.countDocuments(),
+      TrustedSource.countDocuments({ monitoringStatus: 'healthy' }),
+      TrustedSource.countDocuments({ monitoringStatus: 'failing' }),
     ]);
 
     return {
@@ -188,6 +325,13 @@ export class AdminService {
       totalSubmitters,
       totalTracked,
       pendingReports,
+      totalVerified: verifiedCount,
+      pendingVerification: pendingVerificationCount,
+      needsRecheck: needsRecheckCount,
+      expired: expiredCount,
+      totalSources,
+      healthySources,
+      failingSources,
     };
   }
 }

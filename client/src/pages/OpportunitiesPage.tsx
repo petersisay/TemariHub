@@ -216,10 +216,10 @@ export const OpportunitiesPage: React.FC = () => {
             <LoadingSpinner message="Searching verified opportunities..." />
           ) : opportunities.length === 0 ? (
             <EmptyState
-              title="No opportunities found"
-              description="Try adjusting your search criteria, clearing filters, or toggling expired listings."
-              actionText="Clear All Filters"
-              onAction={handleClearFilters}
+              title={t('opportunity.emptyVerified')}
+              description={t('opportunity.emptyDescription')}
+              actionText={searchInput || filters.types?.length || filters.field ? "Clear All Filters" : undefined}
+              onAction={searchInput || filters.types?.length || filters.field ? handleClearFilters : undefined}
             />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">

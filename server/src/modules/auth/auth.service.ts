@@ -40,7 +40,7 @@ export class AuthService {
   async login(input: LoginInput): Promise<IUser> {
     const user = await User.findOne({ email: input.email }).select('+passwordHash');
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new UnauthorizedError('Invalid email or password.');
     }
 

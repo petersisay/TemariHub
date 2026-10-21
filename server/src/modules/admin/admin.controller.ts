@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { AdminService } from './admin.service.js';
-import { moderationDecisionSchema, resolveReportSchema } from './admin.schema.js';
+import {
+  moderationDecisionSchema,
+  verificationDecisionSchema,
+  resolveReportSchema,
+} from './admin.schema.js';
 import { BadRequestError } from '../../utils/errors.js';
 
 export class AdminController {
@@ -10,6 +14,60 @@ export class AdminController {
       res.status(200).json({
         success: true,
         data: items,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getVerificationQueue(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const statusFilter = req.query.status as string | undefined;
+      const items = await AdminService.getVerificationQueue(statusFilter);
+      res.status(200).json({
+        success: true,
+        data: items,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async decideVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const parsed = verificationDecisionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        throw new BadRequestError('Validation failed for verification decision', parsed.error.issues.map((i) => ({
+          field: i.path.join('.'),
+          message: i.message,
+        })));
+      }
+
+      const updated = await AdminService.decideVerification(
+        id,
+        parsed.data.status,
+        parsed.data.evidenceNotes,
+        req.user!
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Opportunity verification status set to ${parsed.data.status}.`,
+        data: updated,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async getChangeHistory(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 50;
+      const history = await AdminService.getMaterialChangeHistory(limit);
+      res.status(200).json({
+        success: true,
+        data: history,
       });
     } catch (err) {
       next(err);

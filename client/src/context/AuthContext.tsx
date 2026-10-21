@@ -8,31 +8,15 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, passwordOrRole?: string, requestedRole?: UserRole) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<{ user: User; isNewUser: boolean }>;
   register: (name: string, email: string, role: UserRole, password?: string) => Promise<void>;
   logout: () => Promise<void>;
   switchDemoRole: (newRole: UserRole) => Promise<void>;
+  updateUser: (updatedUser: Partial<User>) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Development demo accounts with standard test passwords
-const DEMO_CREDENTIALS: Record<UserRole, { email: string; password: string; name: string }> = {
-  student: {
-    email: 'kidus@astu.edu.et',
-    password: 'StudentPass2026!',
-    name: 'Kidus Hailu',
-  },
-  submitter: {
-    email: 'careers@safaricom.et',
-    password: 'SubmitterPass2026!',
-    name: 'Bethlehem Tadesse',
-  },
-  admin: {
-    email: 'admin@temarihub.et',
-    password: 'AdminPass2026!',
-    name: 'TemariHub Lead Administrator',
-  },
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -100,6 +84,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithGoogle = async (idToken: string): Promise<{ user: User; isNewUser: boolean }> => {
+    setIsLoading(true);
+    try {
+      const res = await ApiClient.request<{ user: User; isNewUser: boolean }>('/auth/google', {
+        method: 'POST',
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
+      return { user: res.data.user, isNewUser: Boolean(res.data.isNewUser) };
+    } catch (err) {
+      console.error('Google authentication failed:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const register = async (
     name: string,
     email: string,
@@ -141,25 +145,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Development convenience role switcher: attempts real backend login with demo credentials
-  const switchDemoRole = async (newRole: UserRole): Promise<void> => {
-    // Security gate: Never grant administrator privileges via demo switcher in production
-    if (import.meta.env.PROD && newRole === 'admin') {
-      console.warn('Admin switching is disabled in production.');
-      return;
-    }
+  // Role switching is strictly disabled; genuine authentication only
+  const switchDemoRole = async (_newRole: UserRole): Promise<void> => {
+    // No-op for security and real data integrity
+  };
 
-    const creds = DEMO_CREDENTIALS[newRole];
+  const updateUser = (updatedFields: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updatedFields };
+      if (updatedFields.hasCustomAvatar === false) {
+        next.hasCustomAvatar = false;
+        next.customAvatarUrl = '';
+        next.avatarUrl = updatedFields.avatarUrl || prev.googleAvatarUrl || '';
+      }
+      return next;
+    });
+  };
+
+  const refreshUser = async () => {
     try {
-      await login(creds.email, creds.password);
+      const res = await ApiClient.request<{ user: User }>('/auth/me');
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
     } catch {
-      // If server is not reachable (e.g. offline unit test), set memory preview
-      setUser({
-        id: `demo_${newRole}`,
-        name: creds.name,
-        email: creds.email,
-        role: newRole,
-      });
+      // ignore
     }
   };
 
@@ -171,9 +182,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithGoogle,
         register,
         logout,
         switchDemoRole,
+        updateUser,
+        refreshUser,
       }}
     >
       {children}

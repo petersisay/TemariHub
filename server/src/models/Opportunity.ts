@@ -12,6 +12,28 @@ export type OpportunityType =
 export type ModerationStatus = 'pending' | 'approved' | 'rejected';
 export type PublicationStatus = 'draft' | 'published' | 'expired' | 'archived';
 
+export type VerificationStatus =
+  | 'PENDING_REVIEW'
+  | 'VERIFIED'
+  | 'REJECTED'
+  | 'EXPIRED'
+  | 'NEEDS_RECHECK';
+
+export type SourceType =
+  | 'official_portal'
+  | 'verified_partner'
+  | 'manual_submission'
+  | 'automated_feed';
+
+export interface IChangeHistoryItem {
+  date: Date;
+  fieldChanged: string;
+  oldValue: string;
+  newValue: string;
+  reason: string;
+  sourceEvidence?: string;
+}
+
 export interface ICompensation {
   type: 'paid' | 'unpaid' | 'stipend' | 'competitive' | 'undisclosed';
   amount?: number;
@@ -45,6 +67,14 @@ export interface IOpportunity extends Document {
   sourceNotes?: string;
   moderationStatus: ModerationStatus;
   publicationStatus: PublicationStatus;
+  verificationStatus: VerificationStatus;
+  trustedSourceId?: Types.ObjectId;
+  sourceName?: string;
+  sourceType: SourceType;
+  verificationEvidence?: string;
+  lastCheckedDate: Date;
+  isMateriallyUpdated: boolean;
+  changeHistory: IChangeHistoryItem[];
   reviewedBy?: Types.ObjectId;
   reviewNotes?: string;
   lastVerifiedDate: Date;
@@ -188,6 +218,46 @@ const OpportunitySchema = new Schema<IOpportunity>(
       enum: ['draft', 'published', 'expired', 'archived'],
       default: 'draft',
     },
+    verificationStatus: {
+      type: String,
+      enum: ['PENDING_REVIEW', 'VERIFIED', 'REJECTED', 'EXPIRED', 'NEEDS_RECHECK'],
+      default: 'PENDING_REVIEW',
+    },
+    trustedSourceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'TrustedSource',
+    },
+    sourceName: {
+      type: String,
+      trim: true,
+    },
+    sourceType: {
+      type: String,
+      enum: ['official_portal', 'verified_partner', 'manual_submission', 'automated_feed'],
+      default: 'official_portal',
+    },
+    verificationEvidence: {
+      type: String,
+      trim: true,
+    },
+    lastCheckedDate: {
+      type: Date,
+      default: Date.now,
+    },
+    isMateriallyUpdated: {
+      type: Boolean,
+      default: false,
+    },
+    changeHistory: [
+      {
+        date: { type: Date, default: Date.now },
+        fieldChanged: { type: String, required: true },
+        oldValue: { type: String, required: true },
+        newValue: { type: String, required: true },
+        reason: { type: String, required: true },
+        sourceEvidence: { type: String },
+      },
+    ],
     reviewedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -237,6 +307,34 @@ const OpportunitySchema = new Schema<IOpportunity>(
   }
 );
 
+OpportunitySchema.pre('save', function (next) {
+  // Synchronize moderationStatus and verificationStatus
+  if (this.isModified('verificationStatus')) {
+    if (this.verificationStatus === 'VERIFIED') {
+      this.moderationStatus = 'approved';
+      if (this.publicationStatus === 'draft') {
+        this.publicationStatus = 'published';
+      }
+    } else if (this.verificationStatus === 'REJECTED') {
+      this.moderationStatus = 'rejected';
+      this.publicationStatus = 'draft';
+    } else if (this.verificationStatus === 'EXPIRED') {
+      this.publicationStatus = 'expired';
+    } else if (this.verificationStatus === 'PENDING_REVIEW' || this.verificationStatus === 'NEEDS_RECHECK') {
+      this.moderationStatus = 'pending';
+    }
+  } else if (this.isModified('moderationStatus')) {
+    if (this.moderationStatus === 'approved' && this.verificationStatus !== 'VERIFIED') {
+      this.verificationStatus = 'VERIFIED';
+    } else if (this.moderationStatus === 'rejected' && this.verificationStatus !== 'REJECTED') {
+      this.verificationStatus = 'REJECTED';
+    } else if (this.moderationStatus === 'pending' && this.verificationStatus === 'VERIFIED') {
+      this.verificationStatus = 'PENDING_REVIEW';
+    }
+  }
+  next();
+});
+
 OpportunitySchema.index({
   title: 'text',
   description: 'text',
@@ -244,6 +342,8 @@ OpportunitySchema.index({
   requiredSkills: 'text',
 });
 OpportunitySchema.index({ publicationStatus: 1, moderationStatus: 1, deadline: 1 });
+OpportunitySchema.index({ verificationStatus: 1, deadline: 1 });
+OpportunitySchema.index({ trustedSourceId: 1 });
 OpportunitySchema.index({ opportunityType: 1, workArrangement: 1, publicationStatus: 1 });
 OpportunitySchema.index({ submittedBy: 1 });
 

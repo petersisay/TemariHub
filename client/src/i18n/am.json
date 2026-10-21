@@ -64,6 +64,9 @@
   "opportunity": {
     "verified": "የተረጋገጠ ምንጭ",
     "unverified": "በማህበረሰብ የቀረበ",
+    "needsRecheck": "ዳግም ማረጋገጫ ያስፈልጋል",
+    "underReview": "በግምገማ ላይ",
+    "updatedBadge": "የተሻሻለ",
     "expired": "የማመልከቻ ጊዜው አልፏል",
     "closingSoon": "ሊያበቃ ጥቂት ቀናት ቀርተውታል",
     "deadline": "የማመልከቻ ማብቂያ:",
@@ -85,6 +88,8 @@
     "report": "የተሳሳተ መረጃ / አጠራጣሪ ነገር ሪፖርት ያድርጉ",
     "views": "ዕይታዎች",
     "saves": "የተቀመጡ",
+    "emptyVerified": "በአሁኑ ጊዜ የተረጋገጡ ክፍት እድሎች የሉም። እባክዎ ትንሽ ቆይተው እንደገና ይመልከቱ።",
+    "emptyDescription": "የእኛ የአወያይ ቡድን ከተረጋገጡ ተቋማት እና ዩኒቨርሲቲዎች የሚላኩ ክፍት እድሎችን በጥንቃቄ እየገመገመ ነው። እባክዎ ትንሽ ቆይተው እንደገና ይመልከቱ።",
     "backToList": "ወደ ዕድሎች ዝርዝር ተመለስ"
   },
   "tracker": {
@@ -196,6 +201,10 @@
     "roleSubmitter": "ዕድል አቅራቢ / ቀጣሪ ድርጅት",
     "loginBtn": "ግባ",
     "registerBtn": "አካውንት ፍጠር",
+    "continueWithGoogle": "በጉግል ይቀጥሉ",
+    "googleConfigPending": "የጉግል መግቢያ ማዋቀር በመጠባበቅ ላይ",
+    "orContinueWithEmail": "ወይም በኢሜይል ይቀጥሉ",
+    "orRegisterWithEmail": "ወይም በኢሜይል ይመዝገቡ",
     "noAccount": "አካውንት የለዎትም?",
     "haveAccount": "ቀደም ሲል ተመዝግበዋል?",
     "demoNotice": "የልማት ሁነታ (Development Mode)፡ በማንኛውም ኢሜይል/የይለፍ ቃል መግባት ይችላሉ። ሚናዎችን ከላይኛው አሞሌ በቀላሉ መቀየር ይችላሉ።"
@@ -214,5 +223,22 @@
     "filter": "አጣራ",
     "all": "ሁሉም",
     "back": "ተመለስ"
+  },
+  "avatar": {
+    "title": "የመገለጫ ፎቶ",
+    "subtitle": "በቴማሪሀብ ላይ የእርስዎን መለያ የሚወክል የግል ፎቶ ይስቀሉ።",
+    "changePhoto": "ፎቶ ቀይር",
+    "uploadPhoto": "ፎቶ ስቀል",
+    "savePhoto": "ፎቶውን አስቀምጥ",
+    "cancel": "ይቅር",
+    "removePhoto": "የተሰቀለውን ፎቶ አስወግድ",
+    "removeConfirm": "የተሰቀለውን ፎቶ አስወግደው ወደ ነባሪው/የጉግል ፎቶ መመለስ ይፈልጋሉ?",
+    "formatsNotice": "JPEG, PNG ወይም WebP እስከ 5 ሜጋባይት ይደግፋል። ፎቶዎች በራስ-ሰር ወደ 512×512 ስኩዌር ይቀረፃሉ።",
+    "uploadSuccess": "የመገለጫ ፎቶዎ በተሳካ ሁኔታ ተቀይሯል!",
+    "removeSuccess": "ፎቶው ተወግዷል፤ ወደ ነባሪው ተመልሷል።",
+    "previewTitle": "የአዲሱ ፎቶ ቅድመ-ዕይታ",
+    "customPhotoBadge": "ብጁ ፎቶ",
+    "googlePhotoBadge": "የጉግል ፎቶ",
+    "defaultPhotoBadge": "ነባሪ ፎቶ"
   }
 }

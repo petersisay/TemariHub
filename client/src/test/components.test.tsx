@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
+import { Avatar } from '../components/common/Avatar';
 import { OpportunityCard } from '../components/opportunities/OpportunityCard';
 import { TrackerColumn } from '../components/tracker/TrackerColumn';
 import { I18nProvider } from '../context/I18nContext';
@@ -67,5 +68,19 @@ describe('TrackerColumn Component', () => {
 
     expect(screen.getAllByText('Preparing')[0]).toBeInTheDocument();
     expect(screen.getByText(items.length.toString())).toBeInTheDocument();
+  });
+});
+
+describe('Avatar Component', () => {
+  it('renders image when valid src is provided', () => {
+    render(<Avatar src="https://example.com/photo.jpg" name="Abebe Bikila" />);
+    const img = screen.getByRole('img');
+    expect(img).toHaveAttribute('src', 'https://example.com/photo.jpg');
+    expect(img).toHaveAttribute('alt', 'Abebe Bikila');
+  });
+
+  it('renders initials fallback when src is missing', () => {
+    render(<Avatar name="Petros Sisay" />);
+    expect(screen.getByText('PS')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service.js';
+import { verifyGoogleToken, authenticateWithGooglePayload } from './googleAuth.service.js';
 import { env } from '../../config/env.js';
 
 export class AuthController {
@@ -51,6 +52,39 @@ export class AuthController {
             message: 'Sign-in successful.',
             data: {
               user,
+            },
+          });
+        });
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { idToken } = req.body;
+      const verifiedPayload = await verifyGoogleToken(idToken);
+      const { user, isNewUser } = await authenticateWithGooglePayload(verifiedPayload, req.ip);
+
+      req.session.regenerate((err) => {
+        if (err) return next(err);
+
+        req.session.userId = user._id.toString();
+        req.session.userRole = user.role;
+        req.session.userName = user.name;
+
+        req.session.save((saveErr) => {
+          if (saveErr) return next(saveErr);
+
+          res.status(isNewUser ? 201 : 200).json({
+            success: true,
+            message: isNewUser
+              ? 'Google account registered successfully.'
+              : 'Google sign-in successful.',
+            data: {
+              user,
+              isNewUser,
             },
           });
         });

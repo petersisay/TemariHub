@@ -15,6 +15,7 @@ import { ApplicationTrackerItem, Opportunity } from '../types';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { Avatar } from '../components/common/Avatar';
 
 export const StudentDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -56,17 +57,25 @@ export const StudentDashboardPage: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-navy-950 via-navy-900 to-brand-700 rounded-2xl p-6 sm:p-8 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
-            Student Opportunity Portal
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold">
-            Welcome back, {user?.name || 'Student'}!
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-            Track your internship applications, manage your university profile, and never miss an
-            opportunity deadline.
-          </p>
+        <div className="flex items-center gap-5">
+          <Avatar
+            src={user?.avatarUrl}
+            name={user?.name || 'Student'}
+            size="xl"
+            className="border-2 border-white/20 shadow-md hidden sm:flex shrink-0"
+          />
+          <div className="space-y-1.5">
+            <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              Student Opportunity Portal
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold">
+              Welcome back, {user?.name || 'Student'}!
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+              Track your internship applications, manage your university profile, and never miss an
+              opportunity deadline.
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-2">

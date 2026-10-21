@@ -274,6 +274,16 @@ export const LandingPage: React.FC = () => {
 
         {isLoading ? (
           <LoadingSpinner message="Fetching verified listings..." />
+        ) : featured.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center space-y-3 shadow-xs">
+            <ShieldCheck className="w-10 h-10 text-brand-500 mx-auto opacity-70" />
+            <h3 className="font-bold text-slate-800 text-sm">
+              {t('opportunity.emptyVerified')}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              {t('opportunity.emptyDescription')}
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featured.map((opp) => (

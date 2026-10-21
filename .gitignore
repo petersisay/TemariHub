@@ -45,3 +45,8 @@ Thumbs.db
 # Coverage & Test
 coverage/
 .nyc_output/
+
+# Local Uploads & Data
+uploads/
+*/uploads/
+data/

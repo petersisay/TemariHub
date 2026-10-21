@@ -1,6 +1,5 @@
 import { StudentProfile } from '../types';
 import { ApiClient } from './api';
-import { INITIAL_FIXTURE_PROFILE } from './fixtures';
 
 export const profileService = {
   /**
@@ -11,8 +10,8 @@ export const profileService = {
       const response = await ApiClient.request<StudentProfile>('/profile/me');
       return response.data;
     } catch (err) {
-      console.warn('API /profile/me unavailable, local fallback:', err);
-      return { ...INITIAL_FIXTURE_PROFILE };
+      console.warn('API /profile/me request error:', err);
+      return {} as StudentProfile;
     }
   },
 

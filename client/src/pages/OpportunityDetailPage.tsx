@@ -198,26 +198,59 @@ export const OpportunityDetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Verified Source Disclaimer Banner */}
-        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-start gap-2">
-            <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+        {/* Verified Source Provenance Banner */}
+        <div className="p-4 bg-emerald-50/70 rounded-xl border border-emerald-200/90 text-xs text-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-start gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            </div>
             <div>
-              <span className="font-bold text-slate-900 block">Verified Authentic Source</span>
-              <span className="text-slate-500">
-                {opportunity.sourceNotes || t('opportunity.sourceDisclaimer')}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-900 text-sm">
+                  {opportunity.verificationStatus === 'VERIFIED' || opportunity.organization.isVerified
+                    ? 'Verified Authentic Opportunity'
+                    : opportunity.verificationStatus === 'NEEDS_RECHECK'
+                    ? 'Opportunity Under Re-verification'
+                    : 'Pending Administrator Review'}
+                </span>
+                {opportunity.sourceName && (
+                  <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                    {opportunity.sourceName}
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-600 mt-0.5">
+                {opportunity.verificationEvidence || opportunity.sourceNotes || t('opportunity.sourceDisclaimer')}
+              </p>
+              {opportunity.lastCheckedDate && (
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Last monitored & checked: {new Date(opportunity.lastCheckedDate).toLocaleDateString()}
+                </p>
+              )}
             </div>
           </div>
           <a
             href={opportunity.originalSourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-brand-600 hover:text-brand-800 font-semibold inline-flex items-center gap-1 shrink-0 bg-white px-3 py-1.5 rounded-lg border border-slate-200"
+            className="text-brand-700 hover:text-brand-900 font-semibold inline-flex items-center gap-1 shrink-0 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-2xs"
           >
             <span>{t('opportunity.sourceUrl')}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
+        </div>
+
+        {/* Student Safety Notice */}
+        <div className="p-3.5 bg-amber-50/80 rounded-xl border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2.5">
+          <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <span className="font-bold block">Student Safety & Authenticity Warning</span>
+            <span>
+              TemariHub validates announcements against official Ethiopian university and enterprise career registries.
+              Legitimate opportunities never require application fees, registration deposits, or your Google account credentials.
+              If you detect any suspicious demands, report this opportunity immediately.
+            </span>
+          </div>
         </div>
       </div>
 

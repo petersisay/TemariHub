@@ -54,6 +54,24 @@ export class ProfileController {
       next(err);
     }
   }
+
+  async updatePreferences(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const updatedUser = await profileService.updatePreferences(
+        req.user!._id.toString(),
+        req.body
+      );
+      res.status(200).json({
+        success: true,
+        message: 'Notification and language preferences saved successfully.',
+        data: {
+          user: updatedUser,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export const profileController = new ProfileController();

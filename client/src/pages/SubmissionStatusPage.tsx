@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PlusCircle, Clock, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
+import { useAuth } from '../context/AuthContext';
 import { opportunityService } from '../services/opportunityService';
 import { Opportunity } from '../types';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { Avatar } from '../components/common/Avatar';
 
 export const SubmissionStatusPage: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [submissions, setSubmissions] = useState<Opportunity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,11 +20,17 @@ export const SubmissionStatusPage: React.FC = () => {
   const isRecentSuccess = searchParams.get('success') === 'true';
 
   useEffect(() => {
-    // In Phase 1 fixtures, we display all stored opportunities including pending drafts
-    opportunityService.getOpportunities({ includeExpired: true }).then((res) => {
-      setSubmissions(res.items);
-      setIsLoading(false);
-    });
+    opportunityService
+      .getMySubmissions()
+      .then((items) => {
+        setSubmissions(items);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.warn('Could not load user submissions:', err);
+        setSubmissions([]);
+        setIsLoading(false);
+      });
   }, []);
 
   const getStatusBadge = (status: Opportunity['moderationStatus']) => {
@@ -61,24 +70,54 @@ export const SubmissionStatusPage: React.FC = () => {
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-            Opportunity Submissions & Status
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Track the verification progress of opportunities you've submitted to TemariHub.
-          </p>
+        <div className="flex items-center gap-4">
+          <Avatar
+            src={user?.avatarUrl}
+            name={user?.name || 'Submitter'}
+            size="lg"
+            className="hidden sm:flex shrink-0"
+          />
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+              Opportunity Submissions & Status
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              {user ? `Logged in as ${user.name} (${user.email}). ` : ''}Track the verification progress of opportunities you've submitted.
+            </p>
+          </div>
         </div>
 
-        <Link to="/submit">
-          <Button variant="primary" size="sm" icon={<PlusCircle className="w-4 h-4" />}>
-            Post Another Opportunity
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/settings">
+            <Button variant="outline" size="sm">
+              Account Settings
+            </Button>
+          </Link>
+          <Link to="/submit">
+            <Button variant="primary" size="sm" icon={<PlusCircle className="w-4 h-4" />}>
+              Post Opportunity
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
         <LoadingSpinner message="Loading your submission records..." />
+      ) : submissions.length === 0 ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-xs">
+          <Clock className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-slate-800">No submissions yet</h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            You haven't submitted any opportunities yet. Once submitted, your listings and their moderation review status will appear here.
+          </p>
+          <div className="mt-5">
+            <Link to="/submit">
+              <Button variant="primary" size="sm" icon={<PlusCircle className="w-4 h-4" />}>
+                Post an Opportunity
+              </Button>
+            </Link>
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
           <div className="overflow-x-auto">

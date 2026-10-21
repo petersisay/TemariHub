@@ -53,9 +53,33 @@ export function createEnvSchema() {
       SESSION_MAX_AGE_MS: z.string().default('604800000').transform((val) => parseInt(val, 10)),
       RATE_LIMIT_WINDOW_MS: z.string().default('900000').transform((val) => parseInt(val, 10)),
       RATE_LIMIT_MAX_REQUESTS: z.string().default('100').transform((val) => parseInt(val, 10)),
-      INITIAL_ADMIN_EMAIL: z.string().email().optional(),
-      INITIAL_ADMIN_PASSWORD: z.string().min(8).optional(),
-      INITIAL_ADMIN_NAME: z.string().min(2).optional(),
+      INITIAL_ADMIN_EMAIL: z.string().email().optional().or(z.literal('')),
+      INITIAL_ADMIN_PASSWORD: z.string().min(8).optional().or(z.literal('')),
+      INITIAL_ADMIN_NAME: z.string().min(2).optional().or(z.literal('')),
+      GOOGLE_CLIENT_ID: z.string().optional(),
+      ADMIN_EMAIL: z.string().email().default('petrossisay1646@gmail.com'),
+      SUBMITTER_EMAIL: z.string().email().default('petrossisay7164@gmail.com'),
+      REQUIRE_UNIVERSITY_EMAIL: z
+        .string()
+        .default('false')
+        .transform((val) => val.toLowerCase() === 'true' || val === '1'),
+      UNIVERSITY_EMAIL_DOMAINS: z.string().default(''),
+      ENABLE_SOURCE_MONITORING: z
+        .string()
+        .default('true')
+        .transform((val) => val.toLowerCase() === 'true' || val === '1'),
+      SOURCE_MONITOR_INTERVAL_HOURS: z
+        .string()
+        .default('6')
+        .transform((val) => parseInt(val, 10)),
+      SOURCE_REQUEST_TIMEOUT_MS: z
+        .string()
+        .default('10000')
+        .transform((val) => parseInt(val, 10)),
+      SOURCE_MAX_RETRIES: z
+        .string()
+        .default('3')
+        .transform((val) => parseInt(val, 10)),
     })
     .superRefine((data, ctx) => {
       // Production security gate

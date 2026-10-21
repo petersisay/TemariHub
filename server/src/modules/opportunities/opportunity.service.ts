@@ -30,6 +30,7 @@ export interface ListOpportunitiesParams {
   levels?: string | string[];
   field?: string;
   location?: string;
+  locationScope?: 'ethiopia' | 'remote' | 'international' | string;
   includeExpired?: boolean;
   sort?: 'newest' | 'deadline_asc' | 'deadline_desc';
   sortBy?: 'newest' | 'deadline_asc' | 'deadline_desc';
@@ -58,6 +59,7 @@ export class OpportunityService {
 
     const query: FilterQuery<IOpportunity> = {
       moderationStatus: 'approved',
+      verificationStatus: 'VERIFIED',
     };
 
     // Expired listings filter
@@ -138,6 +140,15 @@ export class OpportunityService {
       query.location = new RegExp(escapeRegex(params.location.trim()), 'i');
     }
 
+    // 6b. Location Scope filter (ethiopia, remote, international)
+    if (params.locationScope === 'remote') {
+      query.workArrangement = 'remote';
+    } else if (params.locationScope === 'ethiopia') {
+      query.location = /ethiopia|addis|adama|hawassa|dire dawa|bahir dar|mekelle|gondar/i;
+    } else if (params.locationScope === 'international') {
+      query.location = /international|global|worldwide|germany|usa|online|hybrid\/regional/i;
+    }
+
     // 7. Sort order
     const sortField = params.sortBy || params.sort || 'newest';
     let sortOptions: Record<string, 1 | -1> = { createdAt: -1 };
@@ -182,6 +193,7 @@ export class OpportunityService {
 
     const isPubliclyVisible =
       opportunity.moderationStatus === 'approved' &&
+      opportunity.verificationStatus === 'VERIFIED' &&
       (opportunity.publicationStatus === 'published' || opportunity.publicationStatus === 'expired');
 
     if (!isPubliclyVisible) {

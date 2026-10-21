@@ -11,41 +11,43 @@ export async function seedOpportunitiesData(disconnectOnFinish = false) {
   }
 
   // Ensure an admin and submitter exist to attribute submissions
-  let admin = await User.findOne({ role: 'admin' });
+  // 1. Ensure an admin exists to attribute submissions
+  const configuredAdminEmail = env.ADMIN_EMAIL.toLowerCase().trim();
+  let admin = await User.findOne({ email: configuredAdminEmail });
+  if (!admin) {
+    admin = await User.findOne({ role: 'admin' });
+  }
   if (!admin) {
     const adminPassHash = await hashPassword('AdminPass2026!');
     admin = await User.create({
       name: 'TemariHub Lead Administrator',
-      email: 'admin@temarihub.et',
+      email: configuredAdminEmail,
       passwordHash: adminPassHash,
       role: 'admin',
       isVerified: true,
     });
   }
 
-  let submitter = await User.findOne({ role: 'submitter' });
+  // 2. Ensure an Opportunity Submitter exists to attribute submissions
+  const configuredSubmitterEmail = env.SUBMITTER_EMAIL.toLowerCase().trim();
+  let submitter = await User.findOne({ email: configuredSubmitterEmail });
+  if (!submitter) {
+    submitter = await User.findOne({ role: 'submitter' });
+  }
   if (!submitter) {
     const submitterPassHash = await hashPassword('SubmitterPass2026!');
     submitter = await User.create({
-      name: 'Bethlehem Tadesse',
-      email: 'careers@safaricom.et',
+      name: 'Opportunity Submitter',
+      email: configuredSubmitterEmail,
       passwordHash: submitterPassHash,
       role: 'submitter',
       isVerified: true,
     });
   }
 
-  let student = await User.findOne({ role: 'student' });
-  if (!student) {
-    const studentPassHash = await hashPassword('StudentPass2026!');
-    student = await User.create({
-      name: 'Kidus Hailu',
-      email: 'kidus@astu.edu.et',
-      passwordHash: studentPassHash,
-      role: 'student',
-      isVerified: true,
-    });
-  }
+  // 3. Find any existing student if available
+  const student = await User.findOne({ role: 'student' });
+
 
   const existingCount = await Opportunity.countDocuments();
   if (existingCount > 0) {

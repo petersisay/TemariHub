@@ -4,7 +4,7 @@ import { PlusCircle, ShieldAlert } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { opportunityService } from '../services/opportunityService';
 import { OpportunityType, WorkArrangement, DegreeLevel } from '../types';
-import { STEM_FIELDS_OF_STUDY } from '../services/fixtures';
+import { STEM_FIELDS_OF_STUDY } from '../constants/academic';
 import { Button } from '../components/common/Button';
 
 export const SubmitOpportunityPage: React.FC = () => {
