@@ -275,4 +275,142 @@ describe('Google Authentication Upgrade Tests', () => {
       expect(logoutRes.status).toBe(200);
     });
   });
+
+  describe('5. Concurrent Google Sign-Ins and Session Robustness', () => {
+    it('handles concurrent Google authentication attempts idempotently without collisions', async () => {
+      // Fire 3 simultaneous Google sign-in requests
+      const promises = [
+        request(app).post('/api/v1/auth/google').set(CSRF_HEADER).send({ idToken: 'VALID_STUDENT_TOKEN' }),
+        request(app).post('/api/v1/auth/google').set(CSRF_HEADER).send({ idToken: 'VALID_STUDENT_TOKEN' }),
+        request(app).post('/api/v1/auth/google').set(CSRF_HEADER).send({ idToken: 'VALID_STUDENT_TOKEN' }),
+      ];
+
+      const results = await Promise.all(promises);
+
+      // All requests should succeed with 200 or 201
+      for (const res of results) {
+        expect([200, 201]).toContain(res.status);
+        expect(res.body.success).toBe(true);
+        expect(res.body.data.user.email).toBe('solomon@astu.edu.et');
+      }
+
+      // Exactly one user account must exist
+      const userCount = await User.countDocuments({ email: 'solomon@astu.edu.et' });
+      expect(userCount).toBe(1);
+    });
+  });
+
+  describe('6. Full User Profile Management Across Roles', () => {
+    it('allows an authenticated user to update their display name, bio, and choose a unique username', async () => {
+      const loginRes = await request(app)
+        .post('/api/v1/auth/google')
+        .set(CSRF_HEADER)
+        .send({ idToken: 'VALID_STUDENT_TOKEN' });
+
+      const cookie = loginRes.headers['set-cookie'][0];
+
+      // Update profile with unique username, bio, and institution
+      const updateRes = await request(app)
+        .put('/api/v1/profile/me')
+        .set(CSRF_HEADER)
+        .set('Cookie', cookie)
+        .send({
+          name: 'Solomon Hailu Updated',
+          username: 'solomon_tech',
+          bio: 'Fullstack developer passionate about fintech.',
+          institution: 'ASTU Computer Science',
+        });
+
+      expect(updateRes.status).toBe(200);
+      expect(updateRes.body.success).toBe(true);
+      expect(updateRes.body.data.user.name).toBe('Solomon Hailu Updated');
+      expect(updateRes.body.data.user.username).toBe('solomon_tech');
+      expect(updateRes.body.data.user.bio).toBe('Fullstack developer passionate about fintech.');
+      expect(updateRes.body.data.user.institution).toBe('ASTU Computer Science');
+
+      // Verify GET /profile/me returns updated fields
+      const getRes = await request(app)
+        .get('/api/v1/profile/me')
+        .set('Cookie', cookie);
+
+      expect(getRes.status).toBe(200);
+      expect(getRes.body.data.user.username).toBe('solomon_tech');
+      expect(getRes.body.data.user.name).toBe('Solomon Hailu Updated');
+    });
+
+    it('rejects duplicate username with a clear 409 Conflict error', async () => {
+      // Create user 1 with username 'astu_engineer'
+      await User.create({
+        name: 'Engineer One',
+        email: 'eng1@astu.edu.et',
+        username: 'astu_engineer',
+        role: 'student',
+        authProvider: 'google',
+        isVerified: true,
+      });
+
+      // Login as user 2
+      const loginRes = await request(app)
+        .post('/api/v1/auth/google')
+        .set(CSRF_HEADER)
+        .send({ idToken: 'VALID_STUDENT_TOKEN' });
+
+      const cookie = loginRes.headers['set-cookie'][0];
+
+      // Attempt to claim existing username
+      const conflictRes = await request(app)
+        .put('/api/v1/profile/me')
+        .set(CSRF_HEADER)
+        .set('Cookie', cookie)
+        .send({ username: 'astu_engineer' });
+
+      expect(conflictRes.status).toBe(409);
+      expect(conflictRes.body.success).toBe(false);
+      expect(conflictRes.body.message).toContain('username is already taken');
+    });
+
+    it('rejects reserved system usernames with 400 Bad Request', async () => {
+      const loginRes = await request(app)
+        .post('/api/v1/auth/google')
+        .set(CSRF_HEADER)
+        .send({ idToken: 'VALID_STUDENT_TOKEN' });
+
+      const cookie = loginRes.headers['set-cookie'][0];
+
+      const reservedRes = await request(app)
+        .put('/api/v1/profile/me')
+        .set(CSRF_HEADER)
+        .set('Cookie', cookie)
+        .send({ username: 'administrator' });
+
+      expect(reservedRes.status).toBe(400);
+      expect(reservedRes.body.success).toBe(false);
+      expect(reservedRes.body.message).toContain('reserved');
+    });
+
+    it('allows an administrator or submitter to update their profile without requiring academic fields', async () => {
+      // Login as admin
+      const adminLogin = await request(app)
+        .post('/api/v1/auth/google')
+        .set(CSRF_HEADER)
+        .send({ idToken: 'VALID_ADMIN_TOKEN' });
+
+      const adminCookie = adminLogin.headers['set-cookie'][0];
+
+      const updateAdmin = await request(app)
+        .put('/api/v1/profile/me')
+        .set(CSRF_HEADER)
+        .set('Cookie', adminCookie)
+        .send({
+          name: 'Petros Administrator',
+          username: 'petros_admin',
+          bio: 'Platform maintainer and moderation lead.',
+          institution: 'TemariHub Operations',
+        });
+
+      expect(updateAdmin.status).toBe(200);
+      expect(updateAdmin.body.data.user.role).toBe('admin');
+      expect(updateAdmin.body.data.user.username).toBe('petros_admin');
+    });
+  });
 });

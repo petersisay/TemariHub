@@ -33,10 +33,27 @@ export function createApp(sessionStore?: session.Store): Express {
     })
   );
 
-  // CORS configuration
+  // CORS configuration supporting production Vercel frontend, previews, and local dev
+  const allowedOrigins = [
+    env.CLIENT_URL,
+    'https://temari-hub.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+  ].filter(Boolean);
+
   app.use(
     cors({
-      origin: env.CLIENT_URL,
+      origin: (requestOrigin, callback) => {
+        if (!requestOrigin) return callback(null, true);
+        if (
+          allowedOrigins.includes(requestOrigin) ||
+          /^https:\/\/temari-hub-[a-zA-Z0-9_-]+\.vercel\.app$/.test(requestOrigin)
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

@@ -1,6 +1,17 @@
 import { z } from 'zod';
 
 export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name cannot exceed 100 characters').trim().optional(),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username cannot exceed 30 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Username may only contain letters, numbers, underscores, and hyphens')
+    .trim()
+    .toLowerCase()
+    .optional(),
+  bio: z.string().max(1000, 'Bio cannot exceed 1000 characters').trim().optional(),
+  institution: z.string().max(150, 'Institution name cannot exceed 150 characters').trim().optional(),
   university: z.string().min(2, 'University is required').trim().optional(),
   customUniversity: z.string().trim().optional(),
   degreeLevel: z
@@ -11,7 +22,6 @@ export const updateProfileSchema = z.object({
   skills: z.array(z.string().trim()).optional(),
   preferredLocations: z.array(z.string().trim()).optional(),
   preferredArrangements: z.array(z.enum(['on_site', 'remote', 'hybrid'])).optional(),
-  bio: z.string().max(1000, 'Bio cannot exceed 1000 characters').trim().optional(),
   githubUrl: z.string().url('Invalid GitHub URL').or(z.literal('')).optional(),
   linkedinUrl: z.string().url('Invalid LinkedIn URL').or(z.literal('')).optional(),
   portfolioUrl: z.string().url('Invalid Portfolio URL').or(z.literal('')).optional(),

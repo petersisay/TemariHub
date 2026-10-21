@@ -7,6 +7,31 @@ async function startServer(): Promise<void> {
     console.log(`[TemariHub Server] Starting in ${env.NODE_ENV} mode...`);
     await connectDatabase(env.MONGODB_URI);
 
+    // Automated self-healing database audit: safely prune obsolete sessionTokenHash index
+    try {
+      const mongooseModule = await import('mongoose');
+      const db = mongooseModule.default.connection.db;
+      if (db) {
+        const sessionCol = db.collection('sessions');
+        const sessionIndexes = await sessionCol.indexes().catch(() => []);
+        if (sessionIndexes.some((idx: any) => idx.name === 'sessionTokenHash_1')) {
+          console.log('[TemariHub Server] Found obsolete sessionTokenHash_1 index on sessions collection. Dropping index...');
+          await sessionCol.dropIndex('sessionTokenHash_1');
+          console.log('[TemariHub Server] Successfully dropped obsolete sessionTokenHash_1 index from sessions.');
+        }
+
+        const userCol = db.collection('users');
+        const userIndexes = await userCol.indexes().catch(() => []);
+        if (userIndexes.some((idx: any) => idx.name === 'sessionTokenHash_1')) {
+          console.log('[TemariHub Server] Found obsolete sessionTokenHash_1 index on users collection. Dropping index...');
+          await userCol.dropIndex('sessionTokenHash_1');
+          console.log('[TemariHub Server] Successfully dropped obsolete sessionTokenHash_1 index from users.');
+        }
+      }
+    } catch (cleanupErr: any) {
+      console.warn('[TemariHub Server] Obsolete index cleanup note:', cleanupErr.message);
+    }
+
     // Automated initial admin bootstrap if configured
     if (env.INITIAL_ADMIN_EMAIL && env.INITIAL_ADMIN_PASSWORD) {
       try {

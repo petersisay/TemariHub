@@ -19,7 +19,7 @@ export const StudentProfilePage: React.FC = () => {
   useEffect(() => {
     profileService.getStudentProfile().then((data) => {
       setProfile(data);
-      setSkillsInput(data.skills.join(', '));
+      setSkillsInput((data?.skills || []).join(', '));
       setIsLoading(false);
     });
   }, []);

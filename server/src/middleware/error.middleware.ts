@@ -20,12 +20,39 @@ export function errorHandler(
   let message = err.message || 'Internal server error';
   let errors = err.errors;
 
-  // Handle Mongoose duplicate key error (code 11000)
+  // Handle Mongoose / MongoDB duplicate key error (code 11000)
   if (err.code === 11000) {
     statusCode = 409;
-    const field = Object.keys(err.keyValue || {})[0] || 'record';
-    message = `An account or record with this ${field} already exists.`;
-    errors = [{ field, message }];
+    const keyPattern = err.keyPattern ? Object.keys(err.keyPattern) : [];
+    const keyValue = err.keyValue || {};
+    const field = keyPattern[0] || Object.keys(keyValue)[0] || 'record';
+
+    if (env.NODE_ENV !== 'test') {
+      console.error(
+        `[Database Conflict 11000] Duplicate key on field '${field}'. Values:`,
+        keyValue
+      );
+    }
+
+    if (field === 'sessionTokenHash' || field.includes('session') || field === '_id') {
+      message = 'A temporary session conflict occurred. Please refresh the page and try signing in again.';
+      errors = [{ field: 'session', message }];
+    } else if (field === 'email') {
+      message = 'An account with this email address already exists.';
+      errors = [{ field: 'email', message }];
+    } else if (field === 'username') {
+      message = 'This username is already taken. Please choose another username.';
+      errors = [{ field: 'username', message }];
+    } else if (field === 'googleId') {
+      message = 'This Google account is already linked to a TemariHub profile.';
+      errors = [{ field: 'googleId', message }];
+    } else if (field === 'slug') {
+      message = 'An opportunity with this URL title slug already exists.';
+      errors = [{ field: 'slug', message }];
+    } else {
+      message = `An account or record with this ${field} already exists.`;
+      errors = [{ field, message }];
+    }
   }
 
   // Handle Mongoose validation errors

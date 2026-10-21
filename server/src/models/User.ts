@@ -14,6 +14,7 @@ export interface IUser extends Document {
   id?: string;
   name: string;
   fullName?: string;
+  username?: string;
   email: string;
   passwordHash?: string;
   googleId?: string;
@@ -24,6 +25,8 @@ export interface IUser extends Document {
   customAvatarUrl?: string;
   googleAvatarUrl?: string;
   hasCustomAvatar?: boolean;
+  bio?: string;
+  institution?: string;
   preferences?: IUserPreferences;
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +39,19 @@ const UserSchema = new Schema<IUser>(
       required: [true, 'Name is required'],
       trim: true,
       maxlength: [100, 'Name cannot exceed 100 characters'],
+    },
+    username: {
+      type: String,
+      sparse: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      minlength: [3, 'Username must be at least 3 characters'],
+      maxlength: [30, 'Username cannot exceed 30 characters'],
+      match: [
+        /^[a-z0-9_-]+$/,
+        'Username may only contain lowercase letters, numbers, underscores, and hyphens',
+      ],
     },
     email: {
       type: String,
@@ -97,6 +113,18 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Biography cannot exceed 1000 characters'],
+      default: '',
+    },
+    institution: {
+      type: String,
+      trim: true,
+      maxlength: [150, 'Institution name cannot exceed 150 characters'],
+      default: '',
+    },
     preferences: {
       deadlineAlerts: {
         type: Boolean,
@@ -120,6 +148,9 @@ const UserSchema = new Schema<IUser>(
       transform(_doc, ret) {
         (ret as any).id = ret._id.toString();
         (ret as any).fullName = ret.name;
+        (ret as any).username = ret.username || '';
+        (ret as any).bio = ret.bio || '';
+        (ret as any).institution = ret.institution || '';
         (ret as any).customAvatarUrl = ret.customAvatarUrl || '';
         (ret as any).avatarUrl = ret.avatarUrl || ret.googleAvatarUrl || '';
         (ret as any).hasCustomAvatar = Boolean(ret.hasCustomAvatar);
@@ -134,7 +165,6 @@ const UserSchema = new Schema<IUser>(
 UserSchema.virtual('fullName').get(function () {
   return this.name;
 });
-
 
 UserSchema.index({ role: 1 });
 

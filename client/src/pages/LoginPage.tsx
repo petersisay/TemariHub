@@ -1,124 +1,92 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { LogIn, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types';
-import { Button } from '../components/common/Button';
 import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
 
 export const LoginPage: React.FC = () => {
   const { t, language } = useTranslation();
-  const { login, isLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    try {
-      await login(email, password, role);
-      if (role === 'admin') {
-        navigate('/admin');
-      } else if (role === 'submitter') {
-        navigate('/submission-status');
+  // Automatic redirect if user already has an active authenticated session
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else if (user.role === 'submitter') {
+        navigate('/submission-status', { replace: true });
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Invalid email or password. Please try again.');
     }
-  };
+  }, [user, navigate]);
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12 space-y-6">
+    <div className="max-w-md mx-auto px-4 py-12 sm:py-16 space-y-6">
+      {/* Branding Header */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto border border-brand-200 shadow-2xs">
-          <LogIn className="w-6 h-6" />
+        <div className="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto border border-brand-200 shadow-xs">
+          <LogIn className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-900">{t('auth.loginTitle')}</h1>
-        <p className="text-xs text-slate-500">{t('auth.loginSubtitle')}</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          {t('auth.loginTitle')}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto">
+          {t('auth.loginSubtitle')}
+        </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
-        {/* Google-First Sign In Section */}
-        <div>
-          <GoogleAuthButton mode="login" />
-        </div>
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
+      {/* Main Authentication Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+        {errorMessage && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+            {errorMessage}
           </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-slate-400 font-medium">
-              {language === 'am' ? 'ወይም በኢሜይል ይቀጥሉ' : 'Or continue with email'}
+        )}
+
+        {/* Google-First & Only Sign-In */}
+        <div className="space-y-4">
+          <GoogleAuthButton
+            mode="login"
+            onError={(err) => setErrorMessage(err)}
+            onSuccess={() => setErrorMessage(null)}
+          />
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 flex items-start gap-2.5 leading-relaxed">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <span>
+              {language === 'am'
+                ? 'ቴማሪሃብ ደህንነቱ የተጠበቀ ይፋዊ የጉግል መግቢያን ይጠቀማል። የይለፍ ቃል አያስፈልግም።'
+                : 'TemariHub uses official Google Account authentication for secure, verified access. No password required.'}
             </span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {errorMessage && (
-            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-              {errorMessage}
-            </div>
-          )}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t('auth.email')}
-          </label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
+        {/* Navigation to Registration */}
+        <div className="pt-4 border-t border-slate-100 text-center">
+          <p className="text-xs text-slate-600">
+            {language === 'am' ? 'አዲስ ተማሪ ነዎት?' : "Don't have an account yet?"}{' '}
+            <Link
+              to="/register"
+              className="text-brand-600 font-semibold hover:text-brand-700 inline-flex items-center gap-1 ml-1"
+            >
+              <span>{language === 'am' ? 'በጉግል ይመዝገቡ' : 'Sign up with Google'}</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </p>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t('auth.password')}
-          </label>
-          <input
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Sign In Role
-          </label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 capitalize"
-          >
-            <option value="student">Student / Recent Graduate</option>
-            <option value="submitter">Opportunity Submitter</option>
-            <option value="admin">Platform Administrator</option>
-          </select>
-        </div>
-
-        <Button variant="primary" size="md" type="submit" isLoading={isLoading} className="w-full">
-          {t('auth.loginBtn')}
-        </Button>
-
-        <div className="text-center pt-2 text-xs text-slate-500">
-          <span>{t('auth.noAccount')} </span>
-          <Link to="/register" className="font-semibold text-brand-600 hover:underline">
-            {t('nav.register')}
-          </Link>
-        </div>
-      </form>
+      {/* Footer Legal Links */}
+      <div className="text-center text-[11px] text-slate-400 space-x-3">
+        <span>TemariHub © 2026</span>
+        <span>•</span>
+        <span className="hover:text-slate-600 cursor-pointer">Privacy Policy</span>
+        <span>•</span>
+        <span className="hover:text-slate-600 cursor-pointer">Terms of Service</span>
       </div>
     </div>
   );

@@ -9,12 +9,15 @@ export interface UserPreferences {
 export interface User {
   id: string;
   name: string;
+  username?: string;
   email: string;
   role: UserRole;
   avatarUrl?: string;
   customAvatarUrl?: string;
   googleAvatarUrl?: string;
   hasCustomAvatar?: boolean;
+  bio?: string;
+  institution?: string;
   preferences?: UserPreferences;
 }
 

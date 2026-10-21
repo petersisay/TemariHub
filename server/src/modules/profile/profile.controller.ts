@@ -1,17 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import { profileService } from './profile.service.js';
+import { User } from '../../models/User.js';
 
 export class ProfileController {
   async getMe(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const profile = await profileService.getProfile(
+      const complete = await profileService.getCompleteProfile(
         req.user!._id.toString(),
         req.user!
       );
       res.status(200).json({
         success: true,
         data: {
-          profile,
+          user: complete.user,
+          profile: complete.profile || complete.user,
+          studentProfile: complete.studentProfile,
         },
       });
     } catch (err) {
@@ -26,11 +29,14 @@ export class ProfileController {
         req.body,
         req.user!
       );
+      const user = await User.findById(req.user!._id);
       res.status(200).json({
         success: true,
-        message: 'Student profile updated successfully.',
+        message: 'Profile updated successfully.',
         data: {
+          user,
           profile,
+          studentProfile: user?.role === 'student' ? profile : null,
         },
       });
     } catch (err) {

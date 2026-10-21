@@ -1,142 +1,120 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Shield } from 'lucide-react';
+import { UserPlus, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useTranslation } from '../context/I18nContext';
 import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/common/Button';
 import { GoogleAuthButton } from '../components/common/GoogleAuthButton';
 
 export const RegisterPage: React.FC = () => {
   const { t, language } = useTranslation();
-  const { register, isLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'student' | 'submitter'>('student');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    try {
-      await register(name, email, role, password);
-      if (role === 'submitter') {
-        navigate('/submit');
+  // Automatic redirect if user already has an active authenticated session
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else if (user.role === 'submitter') {
+        navigate('/submission-status', { replace: true });
       } else {
-        navigate('/profile');
+        navigate('/dashboard', { replace: true });
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed. Please check your information.');
     }
-  };
+  }, [user, navigate]);
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12 space-y-6">
+    <div className="max-w-md mx-auto px-4 py-12 sm:py-16 space-y-6">
+      {/* Branding Header */}
       <div className="text-center space-y-2">
-        <div className="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto border border-brand-200 shadow-2xs">
-          <UserPlus className="w-6 h-6" />
+        <div className="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto border border-brand-200 shadow-xs">
+          <UserPlus className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-900">{t('auth.registerTitle')}</h1>
-        <p className="text-xs text-slate-500">{t('auth.registerSubtitle')}</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          {t('auth.registerTitle')}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto">
+          {t('auth.registerSubtitle')}
+        </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-5">
-        {/* Google-First Sign Up Section */}
-        <div>
-          <GoogleAuthButton mode="register" />
-        </div>
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
+      {/* Main Registration Card */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+        {errorMessage && (
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+            {errorMessage}
           </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-white px-3 text-slate-400 font-medium">
-              {language === 'am' ? 'ወይም በኢሜይል ይመዝገቡ' : 'Or register with email'}
+        )}
+
+        {/* Benefits bullets */}
+        <div className="space-y-2 pb-2">
+          <div className="flex items-center gap-2 text-xs text-slate-700">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              {language === 'am'
+                ? 'የተረጋገጡ የኢትዮጵያ የስራ እና የተለማማጅነት እድሎች'
+                : 'Verified Ethiopian internships and career opportunities'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-700">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              {language === 'am'
+                ? 'የማመልከቻ ሂደት መከታተያ እና የጊዜ ገደብ ማስታወሻዎች'
+                : 'Personalized application tracker with deadline alerts'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-700">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              {language === 'am'
+                ? 'ለዩኒቨርሲቲ ተማሪዎች የተዘጋጀ ነፃ መድረክ'
+                : '100% free platform tailored for university students'}
             </span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {errorMessage && (
-            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
-              {errorMessage}
-            </div>
-          )}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t('auth.fullName')}
-          </label>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your full name"
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        {/* Google-First Sign Up */}
+        <div className="space-y-4">
+          <GoogleAuthButton
+            mode="register"
+            onError={(err) => setErrorMessage(err)}
+            onSuccess={() => setErrorMessage(null)}
           />
+
+          <div className="p-3.5 rounded-xl bg-brand-50/70 border border-brand-200/60 text-[11px] text-brand-900 flex items-start gap-2.5 leading-relaxed">
+            <Sparkles className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+            <span>
+              {language === 'am'
+                ? 'በጉግል ሲመዘገቡ የተማሪ አካውንት በቀጥታ ይፈጠራል። የአጋር ድርጅት እና አስተዳዳሪ ፈቃዶች በይፋዊ አሰራር ይመደባሉ።'
+                : 'Student accounts are automatically created via Google. Submitter and Administrator roles are assigned securely via institutional verification.'}
+            </span>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t('auth.email')}
-          </label>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="e.g. student@astu.edu.et"
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t('auth.password')}
-          </label>
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Min 8 characters"
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            {t('auth.role')}
-          </label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'student' | 'submitter')}
-            className="w-full text-xs rounded-lg border border-slate-300 p-2.5 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="student">{t('auth.roleStudent')}</option>
-            <option value="submitter">{t('auth.roleSubmitter')}</option>
-          </select>
-          <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-            <Shield className="w-3 h-3 text-slate-400 shrink-0" />
-            <span>Admin privileges cannot be self-assigned through public registration.</span>
+        {/* Navigation to Login */}
+        <div className="pt-4 border-t border-slate-100 text-center">
+          <p className="text-xs text-slate-600">
+            {language === 'am' ? 'ቀደም ሲል አካውንት አለዎት?' : 'Already have an account?'}{' '}
+            <Link
+              to="/login"
+              className="text-brand-600 font-semibold hover:text-brand-700 inline-flex items-center gap-1 ml-1"
+            >
+              <span>{language === 'am' ? 'በጉግል ይግቡ' : 'Sign in with Google'}</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
           </p>
         </div>
+      </div>
 
-        <Button variant="primary" size="md" type="submit" isLoading={isLoading} className="w-full">
-          {t('auth.registerBtn')}
-        </Button>
-
-        <div className="text-center pt-2 text-xs text-slate-500">
-          <span>{t('auth.haveAccount')} </span>
-          <Link to="/login" className="font-semibold text-brand-600 hover:underline">
-            {t('nav.login')}
-          </Link>
-        </div>
-      </form>
+      {/* Footer Legal Links */}
+      <div className="text-center text-[11px] text-slate-400 space-x-3">
+        <span>TemariHub © 2026</span>
+        <span>•</span>
+        <span className="hover:text-slate-600 cursor-pointer">Privacy Policy</span>
+        <span>•</span>
+        <span className="hover:text-slate-600 cursor-pointer">Terms of Service</span>
       </div>
     </div>
   );

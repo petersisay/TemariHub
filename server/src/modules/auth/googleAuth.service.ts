@@ -230,29 +230,49 @@ export async function authenticateWithGooglePayload(
     return { user: existingByEmail, isNewUser: false };
   }
 
-  // 3. Brand new user registration
-  user = await User.create({
-    name: payload.name,
-    email: normalizedEmail,
-    googleId: payload.sub,
-    authProvider: 'google',
-    role: targetRole,
-    isVerified: true,
-    avatarUrl: payload.picture,
-    googleAvatarUrl: payload.picture,
-    hasCustomAvatar: false,
-  });
+  // 3. Brand new user registration with concurrent race recovery
+  try {
+    user = await User.create({
+      name: payload.name,
+      email: normalizedEmail,
+      googleId: payload.sub,
+      authProvider: 'google',
+      role: targetRole,
+      isVerified: true,
+      avatarUrl: payload.picture,
+      googleAvatarUrl: payload.picture,
+      hasCustomAvatar: false,
+    });
+  } catch (createErr: any) {
+    if (createErr.code === 11000) {
+      // Concurrent registration race condition: recover by fetching the newly created user
+      const existingUser = await User.findOne({
+        $or: [{ googleId: payload.sub }, { email: normalizedEmail }],
+      });
+      if (existingUser) {
+        return { user: existingUser, isNewUser: false };
+      }
+    }
+    throw createErr;
+  }
 
   // If student, create default student profile
   if (targetRole === 'student') {
-    await StudentProfile.create({
-      userId: user._id,
-      university: 'Adama Science and Technology University (ASTU)',
-      degreeLevel: 'undergraduate',
-      fieldOfStudy: 'Software Engineering',
-      graduationYear: new Date().getFullYear() + 2,
-      skills: [],
-    });
+    try {
+      await StudentProfile.create({
+        userId: user._id,
+        university: 'Adama Science and Technology University (ASTU)',
+        degreeLevel: 'undergraduate',
+        fieldOfStudy: 'Software Engineering',
+        graduationYear: new Date().getFullYear() + 2,
+        skills: [],
+      });
+    } catch (profileErr: any) {
+      // If profile already created by a concurrent request, continue gracefully
+      if (profileErr.code !== 11000) {
+        console.warn('StudentProfile creation warning:', profileErr.message);
+      }
+    }
   }
 
   await AuditLog.create({
