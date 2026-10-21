@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nProvider } from './context/I18nContext';
 import { AuthProvider } from './context/AuthContext';
 import { Layout } from './components/layout/Layout';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -49,23 +50,31 @@ export const App: React.FC = () => {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-                {/* Student Workspace Routes */}
-                <Route path="/dashboard" element={<StudentDashboardPage />} />
-                <Route path="/profile" element={<StudentProfilePage />} />
-                <Route path="/saved" element={<SavedOpportunitiesPage />} />
-                <Route path="/tracker" element={<ApplicationTrackerPage />} />
+                {/* Student Workspace Routes - Strictly for STUDENT role */}
+                <Route element={<ProtectedRoute allowedRoles={['student']} />}>
+                  <Route path="/dashboard" element={<StudentDashboardPage />} />
+                  <Route path="/profile" element={<StudentProfilePage />} />
+                  <Route path="/saved" element={<SavedOpportunitiesPage />} />
+                  <Route path="/tracker" element={<ApplicationTrackerPage />} />
+                </Route>
 
-                {/* Submitter & Employer Routes */}
-                <Route path="/submit" element={<SubmitOpportunityPage />} />
-                <Route path="/submission-status" element={<SubmissionStatusPage />} />
+                {/* Submitter Routes - Strictly for SUBMITTER and ADMIN roles */}
+                <Route element={<ProtectedRoute allowedRoles={['submitter', 'admin']} />}>
+                  <Route path="/submit" element={<SubmitOpportunityPage />} />
+                  <Route path="/submission-status" element={<SubmissionStatusPage />} />
+                </Route>
 
-                {/* Administrative & Moderation Routes */}
-                <Route path="/admin" element={<AdminDashboardPage />} />
-                <Route path="/moderation" element={<ModerationQueuePage />} />
-                <Route path="/reports" element={<ReportsManagementPage />} />
+                {/* Administrative Routes - Strictly for ADMINISTRATOR role */}
+                <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+                  <Route path="/admin" element={<AdminDashboardPage />} />
+                  <Route path="/moderation" element={<ModerationQueuePage />} />
+                  <Route path="/reports" element={<ReportsManagementPage />} />
+                </Route>
 
-                {/* Settings & System */}
-                <Route path="/settings" element={<SettingsPage />} />
+                {/* Settings & Profile - For any authenticated user */}
+                <Route element={<ProtectedRoute allowedRoles={['student', 'submitter', 'admin']} />}>
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
 
                 {/* 404 Fallback */}
                 <Route path="*" element={<NotFoundPage />} />
