@@ -1,126 +1,98 @@
 # TemariHub — Quality Assurance & Testing Strategy
 
-**Frameworks:** Vitest, React Testing Library, Supertest, MongoMemoryServer, ESLint, TypeScript  
-**Goal:** Verify reliability, boundary isolation, permission enforcement, and data persistence across the full stack.
+**Frameworks:** Vitest, React Testing Library, Supertest, MongoMemoryServer, TypeScript  
+**Total Automated Test Coverage:** **125 Passing Tests** (109 Backend Tests + 16 Frontend Tests)  
+**Execution Environment:** Isolated in-memory database (`mongodb-memory-server`) with zero external service dependencies.  
 
 ---
 
-## 1. Test Pyramid & Scope
+## 1. Test Architecture & Pyramid
+
+TemariHub implements a multi-tiered test strategy to guarantee data integrity, cryptographic authentication verification, role boundary enforcement, and user privacy:
 
 ```
-              / \
-             /   \      E2E User Flow Tests
-            / E2E \     (Core Journeys: Discovery -> Save -> Track)
-           /-------\
-          /         \   API Integration Tests (Supertest + MongoMemoryServer)
-         /   Integ   \  (Auth, RBAC, Filters, Duplicate Prevention, Tracker Privacy)
-        /-------------\
-       /               \ Unit Tests (Vitest)
-      /      Unit       \ (Zod Schemas, Utils, Date Helpers, i18n Dictionary)
-     +-------------------+
+                  / \
+                 /   \      E2E & Component Tests (16 tests)
+                / RTL \     React Testing Library + Vitest
+               /-------\
+              /         \   API Integration Tests (109 tests)
+             / Supertest \  Supertest + MongoMemoryServer (12 Suites)
+            /-------------\
+           /               \ Unit & Validation Tests
+          /   Zod & Utils   \ Zod Schemas, SSRF Guards, Timezone Helpers
+         +-------------------+
 ```
 
 ---
 
-## 2. API Integration Test Matrix
+## 2. Test Suite Distribution
 
-Integration tests run against an isolated `MongoMemoryServer` instance to ensure tests are deterministic, fast, and require no pre-existing external database service.
+### 2.1. Backend API Integration Suites (`server/tests/` — 109 Tests)
 
-| Suite | Test Case | Target Assertion |
+| Suite File | Tests | Focus Area & Verified Invariants |
 |---|---|---|
-| **Auth** | Register with valid student data | Returns 201 Created, sets session cookie, returns sanitized user. |
-| **Auth** | Attempt duplicate email registration | Returns 409 Conflict with meaningful message. |
-| **Auth** | Attempt public registration as `role: 'admin'` | Returns 403 Forbidden. Privileges not escalated. |
-| **Auth** | Login with incorrect password | Returns 401 Unauthorized without leaking account existence. |
-| **Auth** | Invalidate session on logout | Destroys server session, clears cookie, subsequent access rejected (401). |
-| **Security / Env** | Production startup without session secret | Fails fast with clear error when `SESSION_SECRET` is missing. |
-| **Security / Env** | Production secret length validation | Rejects session secrets under 32 characters in production. |
-| **Security / Env** | Production placeholder secret rejection | Rejects default development secret and known `.env.example` placeholders. |
-| **Security / CSRF** | Mutating request with valid custom header | Allows state change when `X-Requested-With: XMLHttpRequest` present. |
-| **Security / CSRF** | Production Origin header matching | Verifies `Origin` against `CLIENT_URL`; rejects unauthorized or spoofed origins (403). |
-| **Admin Provision** | CLI provision new administrator | Creates admin with canonical `name` field, hashed password, and audit log. |
-| **Admin Provision** | CLI idempotent second execution | Exits safely without creating duplicate administrators. |
-| **Admin Provision** | Refusal of automatic role promotion | Prohibits automatic role escalation of existing `student` or `submitter` accounts. |
-| **Opportunities** | List opportunities (Public) | Returns only `published` & `approved` listings. Drafts omitted. |
-| **Opportunities** | Filter opportunities by field/type | Matches exact criteria; returns pagination metadata. |
-| **Opportunities** | Expired listings exclusion | Listings past deadline excluded from active feed by default. |
-| **Submissions** | Submitter submits opportunity | Created with `moderationStatus: 'pending'`. Not in public feed. |
-| **Saved** | Student saves opportunity | Returns 201. Subsequent duplicate save returns 200 idempotent. |
-| **Saved** | Student unsaves opportunity | Removes bookmark successfully. |
-| **Tracker** | Student adds opportunity to tracker | Saved with valid initial stage (`Interested` or `Preparing`). |
-| **Tracker** | Student updates status stage | Successfully transitions through all 7 stages (*Applied*, *Interview*, etc.). |
-| **Tracker** | Student updates private notes | Notes persisted accurately. |
-| **Tracker** | Cross-student tracker isolation | Student A cannot read, update, or delete Student B's tracker records (403 Forbidden). |
-| **Moderation** | Non-admin accesses moderation queue | Returns 403 Forbidden. |
-| **Moderation** | Admin approves submitted listing | Listing transitions to `approved` & `published`. Visible in public feed. |
-| **Moderation** | Audit log recording | Admin approval logs actor, target, and timestamp into `audit_logs`. |
+| `googleAuth.test.ts` | 16 | Google ID token verification via `google-auth-library`, audience matching, designated email role assignment (`petrossisay1646@gmail.com` as admin, `petrossisay7164@gmail.com` as submitter), session regeneration, and public role escalation refusal. |
+| `verifiedSources.test.ts` | 11 | 12 trusted source discovery, SSRF protections (blocking loopback `127.0.0.1`, private RFC 1918 CIDR blocks, and cloud metadata `169.254.169.254`), and invariant that discovered announcements enter `PENDING_REVIEW` & `draft`. |
+| `avatar.test.ts` | 10 | Avatar upload validation, file size limits (5MB), MIME type checking, square WebP image normalization, custom avatar deletion, and Google photo fallback across all 3 user roles. |
+| `auth.test.ts` | 11 | Session creation, cookie attributes (`HttpOnly`, `SameSite`, `Secure`), session invalidation on logout, `/api/v1/auth/me` user payload sanitization, and 403 retirement responses for legacy password routes. |
+| `opportunities.test.ts` | 8 | Public feed visibility invariant (`published` + `VERIFIED` only), full-text search, multi-faceted filtering (type, arrangement, level, location), expired listing exclusion, submitter editing, and user reporting. |
+| `tracker.test.ts` | 8 | 7-stage application tracking (*Interested*, *Preparing*, *Applied*, *Interview*, *Accepted*, *Rejected*, *Withdrawn*), bookmarking duplicate prevention, student notes privacy, and cross-student isolation. |
+| `admin.test.ts` | 7 | Administrator moderation queue access, approving/rejecting listings, verifying listings with recorded evidence, resolving user reports, and generating immutable audit logs. |
+| `csrf.test.ts` | 9 | CSRF defense-in-depth: requirement of `X-Requested-With: XMLHttpRequest` custom header and origin matching against configured `CLIENT_URL`. |
+| `env.test.ts` | 10 | Fail-fast production startup validation: strict `SESSION_SECRET` length (>= 32 chars), rejection of development default secrets, and schema typing with Zod. |
+| `seedAdmin.test.ts` | 8 | CLI administrator bootstrap: canonical User schema attributes, password hashing, idempotency, and refusal of automatic role escalation for existing accounts. |
+| `models.test.ts` | 7 | Mongoose model schema constraints, compound unique indexes, and pre-save hooks. |
+| `profile.test.ts` | 4 | Unified profile retrieval, academic details update, username unique constraint, and cross-user profile privacy boundaries. |
+
+### 2.2. Frontend Component & Integration Suites (`client/src/test/` — 16 Tests)
+
+| Suite File | Tests | Focus Area & Verified Invariants |
+|---|---|---|
+| `components.test.tsx` | 7 | `OpportunityCard` verified badge rendering, deadline status badge, tags display, and keyboard accessibility. |
+| `integration.test.tsx` | 7 | Route protection via `ProtectedRoute.tsx`, role navigation redirection, filter state updates, and tracker board interactions. |
+| `i18n.test.tsx` | 2 | Zero-flicker synchronous language switching between English (`en`) and Amharic (`am`), key interpolation, and persistent language context. |
 
 ---
 
-## 3. Frontend & Component Test Strategy
+## 3. Comprehensive Test Matrix & Invariants
 
-- **Component Tests (React Testing Library):**
-  - OpportunityCard: Renders title, organization, tags, deadline badge, and verified indicator.
-  - TrackerBoard: Displays 7 status columns, drag/select status transitions, and notes modal.
-  - SearchBar & Filters: Emits debounced search queries and updates query string filters.
-  - LanguageSwitcher: Switches between English (`en`) and Amharic (`am`), updates UI text without page reload or loss of route state.
-
----
-
-## 4. Acceptance Criteria Verification Checklist
-
-### 4.1. Authentication & Security
-- [ ] Student registration, login, logout works with secure cookies.
-- [ ] Passwords stored using bcrypt with 12 rounds.
-- [ ] Public registration rejects `admin` role elevation.
-- [ ] Protected routes reject unauthorized requests with 401/403.
-- [ ] No private student notes or emails leaked in public payloads.
-
-### 4.2. Opportunity Discovery
-- [ ] Search query filters by title, organization, skills, and description.
-- [ ] Multi-select filters by category, level, field of study, and location work.
-- [ ] Sorting by newest and deadline functions accurately.
-- [ ] Expired opportunities marked and excluded from active feed by default.
-- [ ] Detail page renders verified badge, original source link, and application URL.
-
-### 4.3. Student Tracker & Bookmarks
-- [ ] Save/unsave opportunity functions with duplicate prevention.
-- [ ] Application tracker supports all 7 stages (*Interested*, *Preparing*, *Applied*, *Interview*, *Accepted*, *Rejected*, *Withdrawn*).
-- [ ] Private notes and applied dates save and persist accurately.
-- [ ] Application isolation verified: Student B cannot access Student A's records.
-- [ ] Clear disclaimer displayed that tracker is a personal planning tool.
-
-### 4.4. Moderation & Trust
-- [ ] Submitter flow creates pending listing; does not appear on public feed.
-- [ ] Admin moderation dashboard lists pending listings with source URLs.
-- [ ] Admin approval publishes listing to public feed.
-- [ ] Admin rejection updates listing with review feedback.
-- [ ] Audit log records admin actions.
-- [ ] Reporting modal allows users to flag suspicious/expired listings.
-
-### 4.5. Bilingual Localization
-- [ ] English is the default language.
-- [ ] Amharic dictionary covers navigation, forms, buttons, tracker stages, and empty states.
-- [ ] Switching languages preserves current page state and route.
-- [ ] Amharic typography renders with suitable line-height and font support.
+| Category | Test Case | Target Invariant & Assertion |
+|---|---|---|
+| **Google Auth** | Valid Google ID Token | Decodes valid token, matches/creates user, grants session cookie, sets appropriate role. |
+| **Google Auth** | Spoofed / Invalid Token | Rejects unverified Google tokens with 401 Unauthorized. |
+| **Google Auth** | Privilege Escalation Attempt | Non-designated email requesting `role: 'admin'` receives `role: 'student'`. |
+| **Google Auth** | Session Fixation Defense | `req.session.regenerate()` creates a fresh session ID on sign-in. |
+| **SSRF Defense** | Localhost / Loopback target | `SourceMonitorService` rejects `http://127.0.0.1` and `http://localhost`. |
+| **SSRF Defense** | Cloud Metadata target | Rejects `http://169.254.169.254` (AWS/GCP instance metadata endpoint). |
+| **SSRF Defense** | Private RFC 1918 networks | Rejects `10.0.0.0/8`, `172.16.0.0/12`, and `192.168.0.0/16`. |
+| **Source Discovery** | Ingest Verification Status | Candidate announcements enter `PENDING_REVIEW` & `draft`; never published automatically. |
+| **Profile & Avatar** | Square WebP Upload | Accepts JPEG/PNG/WebP <= 5MB, normalizes to WebP, updates `customAvatarUrl`. |
+| **Profile & Avatar** | Avatar Removal | Deletes custom avatar file, restores Google photo or default avatar. |
+| **Profile & Avatar** | Unique Username | Enforces 3-30 chars, lowercase alphanumeric, rejects blacklisted system usernames. |
+| **Opportunities** | Public Feed Invariant | Returns ONLY listings where `publicationStatus === 'published'` and `verificationStatus === 'VERIFIED'`. |
+| **Opportunities** | Submitter Editing | Submitter editing own listing resets status to `draft` and `PENDING_REVIEW`. |
+| **Admin Verification**| Verification with Evidence | Admin verifies listing with recorded source link, transitioning to `VERIFIED` and `published`. |
+| **Student Tracker** | 7 Status Stages | Allows transitions through *Interested*, *Preparing*, *Applied*, *Interview*, *Accepted*, *Rejected*, *Withdrawn*. |
+| **Student Tracker** | Cross-Student Isolation | Student A cannot read or modify Student B's tracker records (403 Forbidden). |
+| **Role Guard** | Submitter / Admin Tracker Access| Submitter and Admin accounts are blocked from accessing student application tracker. |
 
 ---
 
-## 5. Execution Commands
+## 4. Execution Commands
 
 ```bash
-# Run all automated tests
+# Execute entire 125-test suite across client and server
 npm test
 
-# Run backend API integration tests with in-memory DB
+# Run backend integration tests with MongoMemoryServer
 npm run test:server
 
-# Run frontend unit & component tests
+# Run frontend component and localization tests
 npm run test:client
 
-# Run strict TypeScript type verification across entire workspace
+# Run strict TypeScript compiler verification across client and server
 npm run typecheck
 
-# Run linter
+# Run ESLint across workspace
 npm run lint
 ```
