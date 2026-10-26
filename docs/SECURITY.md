@@ -1,7 +1,10 @@
 # TemariHub — Security Architecture & Threat Model
 
-**Status:** Active  
-**Scope:** Authentication, Session Storage, Access Control, Data Privacy, and API Hardening  
+**Status:** Active Production  
+**Scope:** Google Identity Authentication, Session Security, Role-Based Access Control, Trusted Source SSRF Defense, and Data Privacy  
+**Production URLs:**
+- Frontend: [https://temari-hub.vercel.app](https://temari-hub.vercel.app)
+- Backend: [https://temarihub-api.onrender.com](https://temarihub-api.onrender.com)
 
 ---
 
@@ -9,113 +12,110 @@
 
 | Threat / Attack Vector | Target Impact | Mitigation Strategy in TemariHub |
 |---|---|---|
-| **Credential Stuffing & Brute Force** | Account takeover | Argon2id/bcrypt (salt 12+), rate limiting on `/api/v1/auth/login`, generic error messages. |
-| **Privilege Escalation** | Regular user registering as Admin | Role assignment locked on server. `role: 'admin'` rejected by public registration endpoint with HTTP 403. |
-| **NoSQL Injection** | Data leakage or tampering | Strict Zod validation and Mongoose schema typing; avoid unescaped `$where` or raw object queries. |
-| **Cross-Site Scripting (XSS)** | Token theft, session hijacking | `HttpOnly` session cookies (inaccessible to client JavaScript), React auto-escaping, Helmet CSP headers. |
-| **Cross-Site Request Forgery (CSRF)**| Unauthorized state changes | SameSite cookie policy, origin/referer validation on mutating requests, and double-submit/CSRF tokens. |
-| **Student Privacy Leakage** | Exposure of private notes & tracker | Strict server-side resource ownership checks (`tracker.userId === req.user._id`). Notes excluded from all public feeds. |
-| **Inaccurate / Malicious Listings** | Phishing or scamming students | Two-tier publishing: submitters cannot publish directly; mandatory original source URL; admin moderation queue. |
+| **Google ID Token Forgery** | Account takeover or identity spoofing | Cryptographic verification of token signature, expiration, and audience (`GOOGLE_CLIENT_ID`) via `google-auth-library`. Raw tokens are never trusted without signature verification. |
+| **Credential Stuffing & Password Leaks** | Account compromise | **Password authentication retired**: All users authenticate through Google Identity Services (GIS). Legacy `/register` and `/login` endpoints return HTTP 403 Forbidden. |
+| **Privilege Escalation** | Unauthorized elevation to `admin` or `submitter` | Server-enforced role boundary: Only pre-authorized designated emails (`petrossisay1646@gmail.com` for admin, `petrossisay7164@gmail.com` for submitter) receive elevated roles. All other registrations default to `student`. Public role override attempts are ignored or rejected. |
+| **Server-Side Request Forgery (SSRF)** | Internal network reconnaissance, AWS/GCP metadata exposure via crawler | Strict protocol enforcement (HTTPS only), hostname resolution checks, and blacklisting of loopback (`127.0.0.1`, `localhost`), link-local metadata endpoints (`169.254.169.254`), and private RFC 1918 CIDR blocks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) in `SourceMonitorService`. |
+| **Listing Tampering / Scam Infiltration** | Fake opportunities, phishing links | Submissions enter `draft` and `PENDING_REVIEW`. Material edits by submitters reset listings to `draft` and `PENDING_REVIEW` for mandatory administrative re-verification. Opportunities are only published when verified by an administrator with recorded evidence. |
+| **Cross-Site Scripting (XSS)** | Session hijacking, client manipulation | `HttpOnly` session cookies (inaccessible to client JavaScript), React auto-escaping, and strict Helmet Content-Security-Policy headers. |
+| **Cross-Site Request Forgery (CSRF)** | Unauthorized state modification | Custom header verification (`X-Requested-With: XMLHttpRequest`), strict production `Origin` header matching against `CLIENT_URL`, and SameSite cookie policies. |
+| **Database Index Collisions** | Service outage on user updates | Self-healing database startup routine in `server.ts` safely prunes obsolete indexes (such as `sessionTokenHash_1`) before incoming traffic is accepted. |
+| **Student Privacy Leakage** | Exposure of academic details or personal tracker notes | Strict resource ownership checks (`tracker.userId === req.user._id`). Application tracker entries, private notes, and student profiles are strictly isolated from public feeds and other users. |
 
 ---
 
-## 2. Authentication & Session Strategy
+## 2. Authentication & Session Security Architecture
 
-### 2.1. Password Hashing
-- TemariHub uses `bcrypt` (with a cost factor of 12) or `argon2id` for all password digests.
-- Passwords are never logged or stored in plaintext.
-- Schema definition marks `passwordHash` with `select: false` so that standard Mongoose queries do not accidentally project the hash into memory.
+### 2.1. Google-Only Authentication Pipeline
+TemariHub employs a **Google-First / Google-Only identity architecture**:
+1. **Frontend Initiation:** The user signs in using Google Identity Services (GIS), generating a signed Google ID Token (JWT).
+2. **Backend Submission:** The client delivers the ID token to `POST /api/v1/auth/google`.
+3. **Cryptographic Verification:**
+   ```typescript
+   const ticket = await googleClient.verifyIdToken({
+     idToken,
+     audience: env.GOOGLE_CLIENT_ID,
+   });
+   const payload = ticket.getPayload();
+   ```
+4. **Identity & Role Binding:**
+   - The user's subject identifier (`sub`) is saved to `googleId`.
+   - Verified email determines role assignment:
+     - `petrossisay1646@gmail.com` -> `admin`
+     - `petrossisay7164@gmail.com` -> `submitter`
+     - All other accounts -> `student`
+5. **Session Regeneration:** The previous session is destroyed, and a fresh server session is established via `req.session.regenerate()`, preventing session fixation attacks.
 
-### 2.2. Standardized Server-Side Sessions & Cookie Security
-Authentication in TemariHub is standardized on **stateful server-side sessions** (or cryptographically signed session tokens) referenced via secure `HttpOnly` cookies. No credentials or raw authentication tokens are stored in browser localStorage or sessionStorage.
+### 2.2. Session Storage & Cookie Security
+Authentication state is managed through stateful server sessions stored in MongoDB via `connect-mongo`:
+- **`temarihub_sid` Cookie Settings:**
+  - `httpOnly: true`: Completely inaccessible to browser scripts via `document.cookie`.
+  - `secure: true`: Transmitted exclusively over encrypted TLS connections in production.
+  - `sameSite: 'none'` (cross-origin production between Vercel frontend and Render API) or `'lax'` (development).
+  - `maxAge: 604800000` (7 days duration with rolling renewal).
+- **Session Destruction:** `POST /api/v1/auth/logout` explicitly deletes the session record from the MongoDB `sessions` collection and sends an expired cookie header.
 
-- **Cookie Security Configuration:**
-  - `name: 'temarihub_sid'`
-  - `httpOnly: true`: Completely inoperable from client-side JavaScript (`document.cookie`), neutralizing token theft via Cross-Site Scripting (XSS).
-  - `secure: process.env.NODE_ENV === 'production'`: Transmitted exclusively over encrypted TLS/HTTPS connections in staging and production.
-  - `sameSite: 'lax'`: Guarantees the cookie is withheld on cross-origin subrequests, providing foundational CSRF mitigation while permitting standard top-level navigation.
-  - `path: '/'`: Scoped to the application root.
-  - `maxAge: 7 * 24 * 60 * 60 * 1000` (7 days duration with rolling renewal on active interaction).
-
-- **Session Lifecycle & Invalidation:**
-  - **Session Rotation on Authentication:** Upon successful login or credential verification, the previous session identifier is destroyed and a newly regenerated session ID is issued (`req.session.regenerate()`), completely eliminating session fixation attacks.
-  - **Explicit Invalidation on Logout:** Calling `POST /api/v1/auth/logout` explicitly destroys the session record in the server session store and sets an expired cookie (`expires: new Date(0)`) to ensure the client drops the cookie immediately.
-
-- **CSRF Defense-in-Depth:**
-  - In addition to `SameSite: 'lax'`, all mutating HTTP methods (`POST`, `PUT`, `PATCH`, `DELETE`) require custom HTTP headers (e.g., `X-Requested-With: XMLHttpRequest` or standard CSRF token verification) and origin/referer header matching against the configured `CLIENT_URL`. Cross-origin form posts from third-party websites are rejected.
-
-- **Environment & Secrets Hygiene:**
-  - All template configurations (`.env.example`) contain placeholders only. No hardcoded or default session secrets are committed to version control.
-  - In production deployments, `SESSION_SECRET` must be explicitly provided and be at least 32 characters in length. The application fails fast on startup if the production secret is missing, short, or matches development placeholders.
-  - Secrets and credentials are never printed or logged.
-
-### 2.3. Administrator Provisioning Security & Role Escalation Refusal
-- Public registration endpoints reject any attempt to self-assign the `admin` role with HTTP 400.
-- Provisioning an initial administrator is performed strictly via a protected CLI bootstrap script (`npm run seed:admin`) requiring `INITIAL_ADMIN_EMAIL` and `INITIAL_ADMIN_PASSWORD` (minimum 8 characters).
-- **Anti-Privilege Escalation Policy:** The provisioning script strictly refuses to automatically promote an existing `student` or `submitter` account to `admin`. This prevents accidental account takeovers or unauthorized elevation of privileges. Promoting an existing account requires an explicit, documented, separately authorized administrative procedure.
-- Administrator creation is recorded in the append-only `AuditLog` (`action: 'admin_provisioned'`, `targetType: 'user'`).
+### 2.3. Production Secrets Validation
+In production mode, `SESSION_SECRET` must be a cryptographically secure random string with a minimum length of 32 characters. The server verifies this during initialization and **fails fast** if the secret is missing, too short, or matches common template defaults. Secrets are never logged or exposed in client bundles.
 
 ---
 
-## 3. Role-Based Access Control (RBAC)
+## 3. Strict Role-Based Access Control (RBAC)
 
-The platform enforces three distinct user roles:
+The application enforces a rigid 3-role permission matrix:
 
-1. **`student`**:
-   - Access to public opportunity discovery.
-   - Read and write access to their own academic profile.
-   - Read and write access to their own bookmarks (`SavedOpportunity`).
-   - Read and write access to their own application tracker entries and private notes (`ApplicationTracker`).
-   - Ability to submit user reports regarding listings.
-2. **`submitter`**:
-   - Access to public opportunity discovery.
-   - Ability to submit opportunity listings into the moderation queue.
-   - Read and edit access to their own pending or draft listings.
-3. **`admin`**:
-   - Access to the administrative moderation dashboard.
-   - Ability to inspect, approve, reject, publish, archive, and expire opportunities.
-   - Ability to resolve user reports.
-   - Access to view audit logs and system telemetry.
+| Feature / Domain | Student | Submitter (`petrossisay7164@...`) | Admin (`petrossisay1646@...`) |
+|---|---|---|---|
+| **Opportunity Discovery (Verified)** | Allowed (Read) | Allowed (Read) | Allowed (Full Access) |
+| **Apply Now Workflow** | **Allowed** | **Forbidden** (Role Boundary) | **Forbidden** (Role Boundary) |
+| **Application Tracker (7 Stages)** | **Allowed** (Own Only) | **Forbidden** | **Forbidden** |
+| **Saved Bookmarks** | **Allowed** (Own Only) | Forbidden | Allowed (Own Only) |
+| **Submit Opportunity** | Forbidden | **Allowed** (Requires review) | **Allowed** (Direct publish) |
+| **Edit Submitted Opportunity** | Forbidden | **Allowed** (Resets to review) | Allowed (Full edit) |
+| **Verification Queue** | Forbidden | Forbidden | **Allowed** (Record evidence) |
+| **Trusted Source Monitoring** | Forbidden | Forbidden | **Allowed** (Trigger checks) |
+| **Audit Logs & Reports** | Report Only | Report Only | **Allowed** (Full review) |
 
-### RBAC Enforcement Middleware:
-- Every protected endpoint passes through `requireAuth` and optional `requireRole('admin')` or `requireRole(['student', 'admin'])`.
-- Resource ownership validation is performed in the service/controller layer before any update or delete operation:
-  ```typescript
-  if (tracker.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-    throw new ForbiddenError('You are not authorized to modify this tracking entry.');
-  }
-  ```
+### Non-Escalation & Role Invariants:
+1. **Submitters cannot self-approve:** An opportunity submitted or edited by a submitter cannot be published without independent administrative review.
+2. **Submitters and Admins cannot track applications:** Student tracking and "Apply Now" routes (`/tracker`, `/api/v1/tracker`) are reserved strictly for students to avoid data contamination and role ambiguity.
+3. **Immutable Audit Trail:** All administrative decisions (approvals, rejections, evidence verifications, source checks) create permanent append-only audit entries.
 
 ---
 
-## 4. Input Validation & Request Hardening
+## 4. Trusted Source Monitoring & SSRF Protections
 
-- **Zod Schema Validation:**
-  - All incoming request bodies, route parameters, and query strings are parsed through deterministic Zod schemas.
-  - Extraneous fields are automatically stripped.
-- **Express Rate Limiting:**
-  - General API: 120 requests per minute per IP.
-  - Auth routes (`/api/v1/auth/login`, `/register`): 10 attempts per 15-minute window per IP.
-  - Submission routes: 20 submissions per hour per user.
+To protect the backend infrastructure from Server-Side Request Forgery during continuous source discovery:
+1. **HTTPS Protocol Only:** All source endpoints must use encrypted HTTPS. Plaintext HTTP and local protocols (`file://`, `ftp://`) are rejected.
+2. **IP Blacklist Validation:** Prior to initiating an HTTP request, the target hostname is resolved via DNS and checked against prohibited IP spaces:
+   - `127.0.0.0/8` (Loopback)
+   - `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` (Private networks)
+   - `169.254.169.254` (Cloud instance metadata services for AWS, GCP, Azure, and DigitalOcean)
+3. **Read-Only Ingest Invariant:** Discovered announcements are stored with `verificationStatus: 'PENDING_REVIEW'` and `publicationStatus: 'draft'`. Automated background scans can never publish directly to the live feed.
+
+---
+
+## 5. Input Validation, Uploads & API Hardening
+
+- **Zod Schema Validation:** All incoming request bodies, parameters, and query strings are validated through deterministic Zod schemas before reaching business logic.
+- **Avatar Upload Restrictions:**
+  - Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`.
+  - Maximum file size: 5MB.
+  - Image normalization: Images are cropped and converted to WebP on the client before upload, minimizing bandwidth and neutralizing malicious embedded payloads (e.g. polyglot files).
+- **Rate Limiting:**
+  - Authentication routes: 10 attempts per 15-minute window per IP.
+  - General API: 100 requests per 15-minute window per IP.
 - **HTTP Security Headers (via Helmet):**
   - `Content-Security-Policy`
-  - `X-Frame-Options: DENY` (Clickjacking defense)
-  - `X-Content-Type-Options: nosniff` (MIME sniffing defense)
-  - `Strict-Transport-Security` (HSTS in production)
+  - `X-Frame-Options: DENY`
+  - `X-Content-Type-Options: nosniff`
+  - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
 
 ---
 
-## 5. Privacy Boundaries & Data Protection
+## 6. Privacy & Data Confidentiality
 
-- **Student Private Notes:** Private notes recorded in the Application Tracker are strictly confidential. Under no circumstances are tracker notes surfaced in search APIs, public feeds, or employer views.
+- **Student Private Notes:** Private notes recorded in the Application Tracker are encrypted and stored exclusively for the authoring student. They are never returned in public opportunity payloads or shared with external recruiters.
 - **Error Disclosures:**
-  - Stack traces are omitted in production environments (`NODE_ENV === 'production'`).
-  - Authentication errors state: *"Invalid email or password"* rather than distinguishing whether the email or the password was incorrect.
-
----
-
-## 6. Documented Limitations & Operational Security
-
-1. **Local Development In-Memory DB:** In local testing without a live MongoDB daemon, `mongodb-memory-server` is used for automated integration tests. In production, a secure TLS connection string to MongoDB Atlas with IP allowlisting must be configured.
-2. **Email Verification:** Phase 0/MVP verifies identity by credential validation. Full SMTP email confirmation links can be attached in a subsequent release once credentials (e.g., SendGrid/AWS SES) are provisioned.
-3. **Audit Trail Immutability:** Audit logs are append-only; administrative endpoints do not provide deletion routes for the `audit_logs` collection.
+  - Production error responses omit stack traces and system internals.
+  - Authentication error responses return generic, non-enumerating messages.
